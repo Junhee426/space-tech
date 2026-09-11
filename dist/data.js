@@ -131,7 +131,50 @@ window.ATLAS = (() => {
   event('2026-03-19','Starling 후속 실증 설명 갱신','starling-mission','자료 갱신','기동 실행·분산 판단 등 갱신된 실증 설명. 실험 날짜는 별도 미기재.','starling');
   event('2026-05-19','탑재컴퓨팅 제품 기술조사 갱신','tetraplex','자료 갱신','TelePIX 등 제품의 구성·기록을 기술조사에서 확인. 제품 출시일을 뜻하지 않음.','avionics');
   event('2026-06-09','Proba-3 복구 후 편대비행 재수행 발표','proba3','운용 발표','이상 원인 수정과 복구 후 운용 복귀를 발표.','probarecovery');
+  // Expansion records retain their own review date; existing evidence is not re-dated.
+  const expansionReview = '2026-09-12';
+  fields.push(
+    {id:'propulsion',name:'소형 추진계',short:'추진',color:'#f4bf83',root:'electric-propulsion',question:'추진제와 전력 조건별 실증 이력을 비교합니다.'},
+    {id:'power',name:'전력·에너지 저장',short:'전력',color:'#eadb80',root:'space-power',question:'발전·저장·전력 분배 기술을 조사합니다.'},
+    {id:'thermal',name:'열제어·열소재',short:'열제어',color:'#f3a6a6',root:'thermal-control',question:'소재와 열전달 방식의 적용 근거를 확인합니다.'},
+    {id:'sensing',name:'지구관측·초분광 센서',short:'관측센서',color:'#8ed6e3',root:'hyperspectral',question:'관측 데이터와 탑재 처리의 연결을 조사합니다.'},
+    {id:'servicing',name:'근접운용·도킹',short:'근접운용',color:'#d1b6ee',root:'rpod',question:'실증 목표와 실제 달성 범위를 구분합니다.'}
+  );
+  for(const [id,title,path,note] of [
+    ['propulsion-soa','4.0 In-Space Propulsion · 2026','smallsat-institute/sst-soa/in-space_propulsion/','추진 방식·제품·비행 이력 조사. 제품별 추진제와 시험 조건을 구분합니다.'],
+    ['power-soa','3.0 Power · 2026','smallsat-institute/sst-soa/power-subsystems/','태양전지·배터리·전력계 조사. 조사표 수록은 독립 인증을 뜻하지 않습니다.'],
+    ['thermal-soa','7.0 Thermal Control · 2026','smallsat-institute/sst-soa/thermal-control/','열소재·열전달 기술과 BioSentinel 적용 사례.'],
+    ['cpod-source','CubeSat Proximity Operations Demonstration','mission/cpod/','연료 소진으로 종료됐고 계획한 RPOD를 실증하지 못했습니다. 소개문에 남은 미래형 목표와 결과를 구분합니다.']
+  ]) sources.push({id,title,publisher:'NASA',date:null,type:id==='cpod-source'?'공공기관 임무소개':'공공기관 기술조사',url:'https://www.nasa.gov/'+path,note,reviewed:expansionReview});
+  const add=(id,name,type,field,summary,source,extra={})=>node(id,name,type,field,fields.find(f=>f.id===field).name,summary,[source],{reviewed:expansionReview,...extra});
+  add('electric-propulsion','소형 전기추진','technology','propulsion','전기 에너지로 추진제를 가속하는 소형 위성 추진 기술.','propulsion-soa',{aliases:['electric propulsion','이온추진','추력']});
+  add('hall-thruster','홀 효과 추력기','technology','propulsion','전기추진 중 홀 효과를 활용하는 추력기 계열.','propulsion-soa',{aliases:['Hall effect thruster','HET']});
+  add('busek','Busek','organization','propulsion','BHT 계열 홀 추력기 개발사.','propulsion-soa',{aliases:['미국','부섹']});
+  add('bht200','BHT-200','product','propulsion','TacSat-2와 FalconSat-5·6 비행 이력이 기록된 홀 추력기.','propulsion-soa',{status:'기술조사 비행이력',notes:'비행 이력은 제논 추진제 기준입니다. 요오드 파생형의 검증과 구분합니다.'});
+  add('tacsat2','TacSat-2','mission','propulsion','BHT-200 전기추진 비행 이력이 기록된 위성.','propulsion-soa',{launch:'2006',status:'기술조사 비행이력',notes:'발사 연도와 추력기 비행 이력만 수록하며 현재 운용 상태는 추정하지 않습니다.'});
+  add('space-power','위성 전력 시스템','technology','power','발전·에너지 저장·전력 관리를 함께 다루는 위성 하위 시스템.','power-soa',{aliases:['EPS','power system','전원']});
+  add('solar-array','태양전지 배열','technology','power','위성의 발전을 담당하는 태양전지와 배열 구성.','power-soa',{aliases:['solar array','solar cell','태양광']});
+  add('space-battery','우주용 배터리','technology','power','궤도 운용에 필요한 에너지를 저장하는 배터리 계통.','power-soa',{aliases:['battery','리튬이온','Li-ion']});
+  add('gomspace','GomSpace','organization','power','NASA 전력 조사표에 NanoPower 배터리 제품이 수록된 제조사.','power-soa',{aliases:['덴마크','곰스페이스']});
+  add('nanopower-bp4','NanoPower BP4','product','power','NASA 전력 조사표에 수록된 리튬이온 배터리 팩.','power-soa',{status:'기술조사 수록',notes:'특정 고객·위성 탑재나 수주를 이 조사표만으로 확정하지 않습니다.'});
+  add('thermal-control','위성 열제어','technology','thermal','궤도에서 장비의 열환경을 관리하는 소재와 열전달 기술.','thermal-soa',{aliases:['thermal control','방열','냉각']});
+  add('thermal-coating','열제어 코팅·필름','technology','thermal','표면의 태양 흡수와 열복사 특성을 조절하는 소재.','thermal-soa',{aliases:['coating','FEP','열소재']});
+  add('sheldahl','Sheldahl','organization','thermal','BioSentinel 열제어 테이프 적용 사례에 명시된 제조사.','thermal-soa',{aliases:['셸달']});
+  add('fep-tape','은 코팅 FEP 열제어 테이프','product','thermal','BioSentinel 외부 열복사 특성 제어에 사용된 테이프 계열.','thermal-soa',{status:'기술조사 적용 기록',notes:'소재 계열의 적용 기록이며 특정 주문품 번호나 구매 계약을 확인한 것은 아닙니다.'});
+  add('biosentinel','BioSentinel','mission','thermal','2022년 Artemis I에 실려 발사된 6U 위성의 열제어 적용 사례.','thermal-soa',{launch:'2022',status:'기술조사 적용 기록',notes:'여기서는 열소재 적용만 다룹니다. 생물학 실험 성과와 현재 운용 상태는 별도 확인이 필요합니다.'});
+  add('hyperspectral','초분광 지구관측','technology','sensing','여러 파장대의 관측 데이터를 얻고 탑재 장치에서 처리하는 기술.','intuition',{reviewed,aliases:['hyperspectral','초분광','지구관측','Earth observation'],notes:'기존 Intuition-1 자료의 관측 내용을 별도 분야로 분류했습니다.'});
+  add('rpod','랑데부·근접운용·도킹','technology','servicing','위성 간 접근과 결합을 위한 실증 분야.','cpod-source',{aliases:['RPOD','RPO','rendezvous','docking','궤도상 서비스']});
+  add('cpod','CPOD','mission','servicing','두 3U 위성의 근접운용·도킹을 목표로 했으나 계획한 RPOD를 실증하지 못한 임무.','cpod-source',{launch:'2022-05-25',status:'임무 종료 · 목표 미달성',notes:'NASA 임무 페이지의 결과 문구 기준입니다. 종료일은 별도 NASA 소개의 날짜와 차이가 있어 타임라인에 확정하지 않습니다.',aliases:['CubeSat Proximity Operations Demonstration']});
+  for(const [from,to,label,source] of [
+    ['electric-propulsion','hall-thruster','기술 분류','propulsion-soa'],['hall-thruster','bht200','기술 적용','propulsion-soa'],['busek','bht200','개발사','propulsion-soa'],['bht200','tacsat2','비행 이력','propulsion-soa'],
+    ['space-power','solar-array','발전 계통','power-soa'],['space-power','space-battery','저장 계통','power-soa'],['space-battery','nanopower-bp4','제품 분류','power-soa'],['gomspace','nanopower-bp4','제조사','power-soa'],
+    ['thermal-control','thermal-coating','기술 분류','thermal-soa'],['thermal-coating','fep-tape','소재 분류','thermal-soa'],['sheldahl','fep-tape','제조사','thermal-soa'],['fep-tape','biosentinel','적용 기록','thermal-soa'],
+    ['hyperspectral','intuition1','관측·처리 임무','intuition'],['hyperspectral','leopard','관측 데이터 처리','intuition'],['rpod','cpod','실증 목표 · 미달성','cpod-source']
+  ]) link(from,to,label,source,'해당 출처가 설명하는 관계만 수록합니다. 기술 분류는 거래관계가 아니며 실증 목표는 달성 기록과 구분합니다.');
+  event('2006','TacSat-2 발사','tacsat2','발사','BHT-200 비행 이력에 연결된 발사 연도.','propulsion-soa');
+  event('2022','BioSentinel 발사','biosentinel','발사','Artemis I에 실린 6U 열제어 적용 사례.','thermal-soa');
+  event('2022-05-25','CPOD 발사','cpod','발사','근접운용·도킹을 목표로 발사. 목표 달성을 뜻하지 않습니다.','cpod-source');
   const koreanAliases={starling:'스타링','starling-mission':'스타링',starfox:'스타폭스',phisat1:'필사트 파이샛',phisat2:'필사트 파이샛','opssat-mission':'옵스샛 옵스사트',intuition1:'인튜이션',proba3:'프로바',mitll:'MIT 링컨연구소',telepix:'텔레픽스 국내 한국 대한민국',lasercom:'광통신',tesat:'테사트',ubotica:'유보티카',kplabs:'케이피랩스'};
   entities.forEach(e=>{if(koreanAliases[e.id])e.aliases.push(koreanAliases[e.id]);});
-  return {version:'1.0.0',reviewed,fields,sources,entities,links,events,scope:'공개자료 선별 수록 · 자동 실시간 수집 없음'};
+  return {version:'1.1.0',reviewed:expansionReview,fields,sources,entities,links,events,scope:'공개자료 선별 수록 · 자동 실시간 수집 없음'};
 })();

@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: satellite-tech-atlas
+    runtime: static
+    buildCommand: node scripts/validate.mjs
+    staticPublishPath: ./dist

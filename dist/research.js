@@ -18,6 +18,17 @@ window.createAtlasResearch = D => {
  }
  const normalize=value=>String(value??'').normalize('NFKC').toLowerCase().replace(/[\s·_/-]/g,'');
  const tokens=query=>String(query??'').normalize('NFKC').trim().split(/\s+/u).map(normalize).filter(Boolean);
+ // Recognized numbered names are identifiers: "서비스 1" must not match
+ // SERVIS-2 merely because its description contains a year with the digit 1.
+ const numberedName=/^[\p{L}]+[\s-]*\d+$/u;
+ const identifierIndex=new Map();
+ for(const e of D.entities)for(const name of [e.name,...(e.aliases||[])]){
+  const value=String(name).normalize('NFKC').trim();
+  if(!numberedName.test(value))continue;
+  const key=normalize(value);
+  if(!identifierIndex.has(key))identifierIndex.set(key,new Set());
+  identifierIndex.get(key).add(e.id);
+ }
  const texts=new Map(D.entities.map(e=>[e.id,normalize([
   e.name,e.subtitle,e.summary,e.status,e.notes,...(e.aliases||[]),
   ...(e.metrics||[]).flat(),fields.get(e.field).name,fields.get(e.field).short
@@ -27,7 +38,11 @@ window.createAtlasResearch = D => {
  const evidenceFor=id=>evidenceByEntity.get(id)||[];
  const sourceEvidence=id=>evidenceBySource.get(id)||[];
  const inField=(e,field)=>field==='all'||e.field===field||neighbors(e.id).some(n=>n.entity.field===field);
- const matches=(e,query)=>tokens(query).every(token=>texts.get(e.id)?.includes(token));
+ const matches=(e,query)=>{
+  const value=String(query??'').normalize('NFKC').trim();
+  const exact=numberedName.test(value)?identifierIndex.get(normalize(value)):null;
+  return exact?exact.has(e.id):tokens(query).every(token=>texts.get(e.id)?.includes(token));
+ };
  const sourceTexts=new Map(D.sources.map(s=>[s.id,normalize([
   s.title,s.publisher,s.country,s.type,s.note,s.originGroup,
   ...sourceEvidence(s.id).flatMap(item=>[item.claim,item.limitation,item.locator,...item.entities.map(id=>entities.get(id).name)])

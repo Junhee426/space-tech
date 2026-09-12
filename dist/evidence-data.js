@@ -610,6 +610,26 @@
  node('iodine-propulsion','요오드 전기추진','technology','propulsion','고체 요오드의 승화를 이용해 추진제를 공급하는 전기추진 기술.',{aliases:['iodine','아이오딘']});
  node('thrustme','ThrustMe','organization','propulsion','요오드 전기추진 기술을 개발한 기업.',{aliases:['프랑스','CNRS']});
  node('beihangkongshi1','Beihangkongshi-1','mission','propulsion','ThrustMe 요오드 전기추진기를 실은 상용 연구위성.',{launch:'2020-11',status:'기관 궤도변경 기록',aliases:['Spacety','중국'],notes:'ESA가 설명한 실증 범위만 수록합니다.'});
+ // Component qualification missions: keep flight records separate from service missions.
+ node('component-verification','부품·탑재장비 궤도 실증','technology','ai','지상 시험과 우주 환경에서의 부품·장비 동작을 비교하는 실증 기술.',{aliases:['COTS 검증','우주환경 신뢰성','on-orbit verification','OOV']});
+ node('j-spacesystems','Japan Space Systems / USEF','organization','ai','SERVIS 사업의 수행기관. 원문은 과거 USEF 명칭을 함께 설명합니다.',{aliases:['J-spacesystems','일본우주시스템','일본'],notes:'임무 당시 기관명과 현재 자료 발행기관을 함께 표기합니다.'});
+ node('mitsubishi-electric','Mitsubishi Electric','organization','ai','SERVIS-1·2의 주계약 기업.',{aliases:['미쓰비시전기','일본']});
+ node('servis1','SERVIS-1','mission','ai','상용부품(COTS)과 탑재장비의 우주환경 신뢰성을 평가한 일본 실증위성.',{launch:'2003-10-30',status:'2년 궤도 실증 완료',aliases:['SERVIS 1','SERVIS-I','서비스 1','서비즈 1','Space Environment Reliability Verification Integrated System'],metrics:[['임무 구분','부품·장비 신뢰성 실증'],['실증 기간','2년 · 사업 수행기관 기록']],notes:'부품의 지상 방사선 시험과 궤도 SEU 관측을 비교했습니다. 결과를 모든 COTS 제품의 우주 적합성으로 일반화하지 않습니다.'});
+ node('servis2','SERVIS-2','mission','ai','COTS 기반 실험장비와 부품 시험장치를 탑재한 후속 신뢰성 실증위성.',{launch:'2010-06-02',status:'2011년 6월 임무 완료',aliases:['SERVIS 2','SERVIS-II','서비스 2','서비즈 2','Space Environment Reliability Verification Integrated System'],metrics:[['임무 구분','부품·장비 신뢰성 실증'],['종료 시점','2011-06 · 일자 미기재']],notes:'SERVIS-1과 별개 임무입니다. SERVIS-3 사업 착수를 세 번째 위성의 발사로 간주하지 않습니다.'});
+ node('servis-cpt','SERVIS CPT 부품 시험장치','product','ai','SERVIS에서 COTS 부품의 궤도 동작을 평가한 Commercial Parts Test Unit 장비군.',{aliases:['CPT','Commercial Parts Test Unit'],status:'기관 탑재 기록',notes:'임무별 시험장치와 부품 구성을 동일한 제품 버전으로 가정하지 않습니다.'});
+ node('axelspace','Axelspace','organization','ai','RAPIS-1 개발을 담당한 일본 기업.',{aliases:['악셀스페이스','액셀스페이스','일본']});
+ node('rapis1','RAPIS-1','mission','ai','7개 부품·장비 실증 과제를 수행한 JAXA 소형 실증위성.',{launch:'2019-01-18',status:'임무 종료 · 기관 성과 발표',aliases:['RAPIS 1','라피스','RAPid Innovative payload demonstration Satellite 1'],notes:'2020-06-24 운용 종료. 함께 발사된 다른 6개 위성과 구분하며, 실증 과제별 결과는 연결 근거에서 확인합니다.'});
+ node('rapis-nbfpga','RAPIS-1 NBFPGA','product','ai','궤도상 재구성 동작을 시험한 NanoBridge 기반 FPGA.',{status:'기관 실증 결과 공개',aliases:['NanoBridge','원자 스위치'],notes:'시험 기간의 소프트에러 미관측은 모든 환경에서 오류가 없다는 보장이 아닙니다.'});
+ node('rapis-gprcs','RAPIS-1 GPRCS','product','propulsion','HAN계 SHP163 추진약을 사용한 저독성 추진계 실증장비.',{status:'기관 궤도 분사 확인',aliases:['green propellant','그린 추진제','화학추진'],notes:'연속·펄스 분사 결과이며 전기추진 실증이 아닙니다.'});
+ node('rapis-tmsap','RAPIS-1 TMSAP','product','power','박형 패널을 전개하는 경량 태양전지 패들 실증장비.',{status:'기관 전개·발전 확인',aliases:['Thin Membrane Solar Array Paddle']});
+ node('tet1','TET-1','mission','ai','태양전지·항법·추진·컴퓨터 하드웨어 등 11개 실험을 탑재한 독일 OOV 위성.',{launch:'2012-07-22',status:'실험 탑재·발사 확인',aliases:['TET 1','테트','Technologieerprobungsträger','Technology Experiment Carrier','OOV'],notes:'수록한 DLR 자료는 발사 당시의 탑재 구성과 시험 계획입니다. 11개 과제 전체의 최종 성공이나 현재 운용 상태를 추정하지 않습니다.'});
+ records.push(
+  ['jss-servis','SERVIS: project and space verification results','Japan Space Systems','일본','임무 수행기관 자료','https://www.jspacesystems.or.jp/en/project/observation/servis-2/',null,'1. Introduction / 2. Summary / 3. SERVIS-1 Space Verification Results','SERVIS-1은 2년 궤도 운용을 완료했고 SERVIS-2는 2011년 6월 임무를 완료했습니다. CPT를 이용해 COTS 부품을 평가했습니다.','사업 수행기관의 보고입니다. SERVIS-1의 SEU 관측 결과를 SERVIS-2의 정량 결과로 옮기지 않습니다.',['servis1','servis2','servis-cpt','j-spacesystems','cots','component-verification'],'실증 결과'],
+  ['melco-servis','SERVIS engineering test satellites','Mitsubishi Electric','일본','개발사 임무자료','https://www.mitsubishielectric.com/bu/space/satellite/engineering/servis.html',null,'Launch date / Client / Responsibilities','주계약사 자료는 SERVIS-1의 2003-10-30, SERVIS-2의 2010-06-02 발사와 USEF 발주를 명시합니다.','원문의 설계 수명·궤도 표를 실제 운용 결과로 사용하지 않습니다.',['servis1','servis2','mitsubishi-electric'],'임무 구성'],
+  ['jaxa-rapis-outline','革新的衛星技術実証1号機 / RAPIS-1','JAXA','일본','공공기관 임무자료','https://www.kenkai.jaxa.jp/kakushin/kakushin01.html',null,'About 小型実証衛星1号機 / Theme','RAPIS-1은 Axelspace가 개발한 7개 부품·장비 실증 과제의 탑재 위성입니다.','전체 발사 사업의 7개 위성과 RAPIS-1의 7개 탑재 실험은 서로 다른 집계입니다.',['rapis1','axelspace','component-verification'],'임무 구성'],
+  ['jaxa-rapis-results','RAPIS-1 operation completion and experiment results','JAXA','일본','공공기관 실증자료','https://www.jaxa.jp/press/2020/06/20200625-1_j.html','2020-06-25','본문 / 별지 NBFPGA·GPRCS·TMSAP','JAXA는 RAPIS-1의 2020-06-24 운용 종료와 NBFPGA 재구성, GPRCS 분사, TMSAP 전개·발전 성과를 발표했습니다.','과제 제안기관의 보고를 모은 결과입니다. 한 과제의 시험 성공을 다른 장비·궤도로 일반화하지 않습니다.',['rapis1','rapis-nbfpga','rapis-gprcs','rapis-tmsap','fpga','solar-array','jaxa','j-spacesystems'],'실증 결과'],
+  ['dlr-tet1-launch','German TET-1 small satellite launched','DLR','독일','공공기관 임무자료','https://www.dlr.de/en/latest/news/2012/20120722_german-tet-1-small-satellite-launched_4318/@@download/file','2012-07-22','PDF 1쪽: technology testbed / 11 experiments','DLR은 2012-07-22 TET-1 발사와 태양전지·항법·추진·컴퓨터 등 11개 탑재 실험을 설명합니다.','발사 자료의 1년 시험 계획을 완료 실적으로 취급하지 않습니다.',['tet1','component-verification','solar-array','dlr'],'임무 구성']
+ );
  for(const row of records){
   const [id,title,publisher,country,type,url,date,locator,claim,limitation,entities,kind]=row;
   D.sources.push({id,title,publisher,country,type,url,date,reviewed,note:limitation,access:'본문 확인',dateKind:date?'문서 발표·판본':'미기재'});
@@ -660,6 +680,30 @@
   ['iodine-propulsion','beihangkongshi1','궤도변경 실증','esa-iodine','점화·궤도변경 기록.']
  ];
  for(const row of relations)relate(...row);
+ for(const row of [
+  ['cots','servis1','COTS 신뢰성 실증','jss-servis','지상 시험과 궤도 시험의 비교.'],
+  ['cots','servis2','COTS 신뢰성 실증','jss-servis','후속 위성의 부품·장비 시험.'],
+  ['component-verification','servis1','실증 플랫폼','jss-servis','상용부품 궤도 검증.'],
+  ['component-verification','servis2','실증 플랫폼','jss-servis','후속 상용부품 검증.'],
+  ['j-spacesystems','servis1','사업 수행','jss-servis','과거 USEF 명칭을 포함한 사업 수행기관.'],
+  ['j-spacesystems','servis2','사업 수행','jss-servis','과거 USEF 명칭을 포함한 사업 수행기관.'],
+  ['mitsubishi-electric','servis1','주계약자','melco-servis','제조사 공개 역할.'],
+  ['mitsubishi-electric','servis2','주계약자','melco-servis','제조사 공개 역할.'],
+  ['servis-cpt','servis1','부품 시험장치 탑재','jss-servis','임무별 세부 구성이 같다는 뜻은 아님.'],
+  ['servis-cpt','servis2','부품 시험장치 탑재','jss-servis','임무별 세부 구성이 같다는 뜻은 아님.'],
+  ['component-verification','rapis1','실증 플랫폼','jaxa-rapis-outline','7개 부품·장비 과제.'],
+  ['axelspace','rapis1','위성 개발','jaxa-rapis-outline','JAXA 소개의 개발 역할.'],
+  ['jaxa','rapis1','임무 주관','jaxa-rapis-results','JAXA 실증 프로그램.'],
+  ['rapis-nbfpga','rapis1','탑재·실증','jaxa-rapis-results','재구성 시험 성과.'],
+  ['fpga','rapis-nbfpga','관련 기술','jaxa-rapis-results','NanoBridge FPGA 기술 분류.'],
+  ['rapis-gprcs','rapis1','탑재·분사 실증','jaxa-rapis-results','HAN계 화학추진 시험.'],
+  ['j-spacesystems','rapis-gprcs','실증 과제 제안','jaxa-rapis-results','JAXA 별지의 과제 제안기관.'],
+  ['rapis-tmsap','rapis1','탑재·발전 실증','jaxa-rapis-results','경량 패들 전개·발전 확인.'],
+  ['solar-array','rapis-tmsap','관련 기술','jaxa-rapis-results','태양전지 패들 기술 분류.'],
+  ['component-verification','tet1','실증 플랫폼','dlr-tet1-launch','11개 실험 탑재.'],
+  ['dlr','tet1','시험 사업·운용','dlr-tet1-launch','DLR OOV 사업 및 GSOC 운용 역할.'],
+  ['solar-array','tet1','실험 탑재','dlr-tet1-launch','태양전지 실험 탑재 사실이며 최종 결과 아님.']
+ ])relate(...row);
  // Corroborate selected existing edges with direct development/mission sources.
  for(const [from,to,source,scope] of [
   ['busek','bht200','busek-hall','개발사의 BHT-200 제품·비행 이력'],
@@ -694,5 +738,10 @@
   ['2024-01-12','themis','spirit-commission','TheMIS 냉각기 궤도 작동 발표'],
   ['2010-06-11','ikaros','jaxa-ikaros-deploy','IKAROS 돛 전개·발전 확인 발표']
  ])D.events.push({id:'release-evidence-'+source,date,entity,source,kind:'성과 발표',title,summary:D.evidence.find(e=>e.source===source).claim+' 발표 날짜와 시험 수행일은 구분합니다.'});
- D.version='1.2.0';
+ for(const [entity,source] of [['servis1','melco-servis'],['servis2','melco-servis'],['rapis1','jaxa-rapis-results'],['tet1','dlr-tet1-launch']]){
+  D.events.push({id:'launch-evidence-'+entity,date:entityMap.get(entity).launch,entity,source,kind:'발사',title:entityMap.get(entity).name+' 발사',summary:'부품·장비 궤도 실증 플랫폼 발사. 실험 완료와 구분합니다.'});
+ }
+ D.events.push({id:'servis2-completion',date:'2011-06',entity:'servis2',source:'jss-servis',kind:'임무 완료',title:'SERVIS-2 임무 완료',summary:'사업 수행기관이 명시한 완료 월. 일자는 미기재.'});
+ D.events.push({id:'rapis1-completion',date:'2020-06-24',entity:'rapis1',source:'jaxa-rapis-results',kind:'임무 종료',title:'RAPIS-1 운용 종료',summary:'정파 수행일. 성과 발표일인 6월 25일과 구분합니다.'});
+ D.version='1.3.0';
 })();

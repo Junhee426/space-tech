@@ -19,6 +19,17 @@ window.addEventListener('load',async()=>{
  try{
   const d=window.ATLAS;
   check(window.SatelliteAtlas,'app initialized');
+  document.querySelector('[data-view="missions"]').click();
+  search('servis');
+  check(document.querySelectorAll('.mission-table tbody tr').length===2,'both SERVIS missions are listed');
+  document.querySelector('[data-open="servis2"]').click();
+  check(document.getElementById('detail-dialog').open,'SERVIS detail opens');
+  check(document.getElementById('dialog-content').textContent.includes('2010-06-02'),'SERVIS-2 launch date');
+  check(document.getElementById('dialog-content').textContent.includes('Japan Space Systems'),'SERVIS primary source');
+  document.getElementById('detail-dialog').close();
+  search('서비스 1');
+  check(document.querySelectorAll('.mission-table tbody tr').length===1,'Korean SERVIS alias');
+  search('');
   document.querySelector('[data-view="sources"]').click();
   check(document.querySelectorAll('.source-record').length===d.sources.length,'all source records render');
   select('source-country','대한민국');

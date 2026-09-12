@@ -44,6 +44,17 @@ assert(research.search('초분광','sensing').some(e=>e.id==='intuition1'),'cros
 assert.equal(research.search('BHT-200','power').length,0,'field isolation');
 assert.equal(research.search('없는검색어').length,0);
 assert.equal(research.search('').length,d.entities.length);
+const servisMissions=research.search('servis','ai').filter(e=>e.type==='mission');
+assert.deepEqual(Array.from(servisMissions,e=>e.id).sort(),['servis1','servis2'],'SERVIS missions must be discoverable');
+for(const query of ['SERVIS-2','servis 2','서비스 2','서비즈 2'])assert(research.search(query).some(e=>e.id==='servis2'),'SERVIS alias '+query);
+assert.deepEqual(Array.from(research.search('서비스 1'),e=>e.id),['servis1'],'numbered mission alias must not match incidental years');
+assert.deepEqual(Array.from(research.search('servis 2'),e=>e.id),['servis2']);
+assert.equal(research.search('SERVIS','servicing').filter(e=>e.type==='mission').length,0,'SERVIS is component verification, not servicing');
+for(const id of ['servis1','servis2','rapis1','tet1']){
+ assert(research.evidenceFor(id).length>0,'mission evidence '+id);
+ assert(d.events.some(e=>e.entity===id&&e.kind==='발사'),'launch timeline '+id);
+}
+assert(d.entities.find(e=>e.id==='tet1').notes.includes('최종 성공'),'preserve TET-1 evidence limits');
 assert(research.searchSources('인도 VNIR').some(s=>s.id==='isro-hysis-image'),'claims and country search');
 assert(research.searchSources('Q8S',{country:'캐나다',type:'제조사 사양서'}).some(s=>s.id==='xiphos-q8s'));
 assert.equal(research.searchSources('Q8S',{country:'인도'}).length,0);
@@ -63,6 +74,7 @@ for(const f of d.fields){
 }
 assert.throws(()=>searchTool.execute({query:'',field:'invalid'}));
 assert.throws(()=>searchTool.execute({query:42}));
+assert.equal(searchTool.execute({query:'SERVIS',field:'ai'}).items.filter(e=>e.type==='mission').length,2);
 const sourceTool=registered.find(t=>t.name==='search_satellite_evidence_sources');
 const detachedSourceExecute=sourceTool.execute;
 assert(detachedSourceExecute({query:'',country:'일본'}).count>0,'host can invoke execute without binding');

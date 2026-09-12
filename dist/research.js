@@ -3,6 +3,14 @@ window.createAtlasResearch = D => {
  'use strict';
  const entities=new Map(D.entities.map(e=>[e.id,e]));
  const fields=new Map(D.fields.map(f=>[f.id,f]));
+ const sources=new Map(D.sources.map(s=>[s.id,s]));
+ const evidence=D.evidence||[];
+ const evidenceByEntity=new Map(D.entities.map(e=>[e.id,[]]));
+ const evidenceBySource=new Map(D.sources.map(s=>[s.id,[]]));
+ for(const item of evidence){
+  evidenceBySource.get(item.source).push(item);
+  for(const id of item.entities)evidenceByEntity.get(id).push(item);
+ }
  const adjacency=new Map(D.entities.map(e=>[e.id,[]]));
  for(const link of D.links){
   adjacency.get(link.from).push({entity:entities.get(link.to),link});
@@ -15,7 +23,23 @@ window.createAtlasResearch = D => {
   ...(e.metrics||[]).flat(),fields.get(e.field).name,fields.get(e.field).short
  ].join(' '))]));
  const neighbors=id=>adjacency.get(id)||[];
+ const sourceIds=e=>[...new Set([...e.sources,...neighbors(e.id).flatMap(n=>n.link.sources||[n.link.source])])];
+ const evidenceFor=id=>evidenceByEntity.get(id)||[];
+ const sourceEvidence=id=>evidenceBySource.get(id)||[];
  const inField=(e,field)=>field==='all'||e.field===field||neighbors(e.id).some(n=>n.entity.field===field);
  const matches=(e,query)=>tokens(query).every(token=>texts.get(e.id)?.includes(token));
- return {normalize,neighbors,inField,matches,search:(query='',field='all')=>D.entities.filter(e=>inField(e,field)&&matches(e,query))};
+ const sourceTexts=new Map(D.sources.map(s=>[s.id,normalize([
+  s.title,s.publisher,s.country,s.type,s.note,s.originGroup,
+  ...sourceEvidence(s.id).flatMap(item=>[item.claim,item.limitation,item.locator,...item.entities.map(id=>entities.get(id).name)])
+ ].join(' '))]));
+ function searchSources(query='',{field='all',country='all',type='all'}={}){
+  const applicable=new Set(D.entities.filter(e=>inField(e,field)).flatMap(sourceIds));
+  return D.sources.filter(s=>applicable.has(s.id)&&(country==='all'||s.country===country)&&(type==='all'||s.type===type)&&tokens(query).every(token=>sourceTexts.get(s.id).includes(token)));
+ }
+ function coverage(list=D.entities){
+  return {entities:list.length,sources:new Set(list.flatMap(sourceIds)).size,
+   directMultiplePublishers:list.filter(e=>new Set(e.sources.map(id=>sources.get(id).originGroup||sources.get(id).publisher)).size>1).length,
+   withClaimEvidence:list.filter(e=>evidenceFor(e.id).length>0).length};
+ }
+ return {normalize,neighbors,inField,matches,sourceIds,evidenceFor,sourceEvidence,searchSources,coverage,search:(query='',field='all')=>D.entities.filter(e=>inField(e,field)&&matches(e,query))};
 };

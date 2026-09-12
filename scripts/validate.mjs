@@ -4,9 +4,16 @@ import assert from 'node:assert/strict';
 const ctx={window:{}};
 vm.runInNewContext(fs.readFileSync('dist/data.js','utf8'),ctx);
 vm.runInNewContext(fs.readFileSync('dist/evidence-data.js','utf8'),ctx);
+vm.runInNewContext(fs.readFileSync('dist/mission-data.js','utf8'),ctx);
 const d=ctx.window.ATLAS;
 const ids=new Set(d.entities.map(e=>e.id));
 const sources=new Set(d.sources.map(s=>s.id));
+for(const e of d.entities.filter(e=>e.type==='mission')){
+ const m=e.demonstration;
+ assert(m&&m.objective&&m.result&&m.conditions&&Array.isArray(m.tests),'missing mission profile '+e.id);
+ assert(e.sources.includes(m.source),'mission source not attached '+e.id);
+ if(m.conditionSource)assert(e.sources.includes(m.conditionSource),'missing condition source '+e.id);
+}
 assert.equal(ids.size,d.entities.length,'duplicate entity IDs');
 assert.equal(sources.size,d.sources.length,'duplicate source IDs');
 assert.equal(new Set(d.fields.map(f=>f.id)).size,d.fields.length,'duplicate field IDs');

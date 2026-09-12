@@ -30,7 +30,7 @@ window.createAtlasResearch = D => {
   identifierIndex.get(key).add(e.id);
  }
  const texts=new Map(D.entities.map(e=>[e.id,normalize([
-  e.name,e.subtitle,e.summary,e.status,e.notes,...(e.aliases||[]),
+  e.name,e.subtitle,e.summary,e.status,e.notes,e.demonstration ? Object.values(e.demonstration).flat(2).join(" ") : "",...(e.aliases||[]),
   ...(e.metrics||[]).flat(),fields.get(e.field).name,fields.get(e.field).short
  ].join(' '))]));
  const neighbors=id=>adjacency.get(id)||[];

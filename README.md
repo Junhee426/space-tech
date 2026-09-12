@@ -58,11 +58,15 @@
 
 ## 검증
 
-`node scripts/validate.mjs`로 ID·URL 중복, 복수 출처 관계, 주장별 근거 연결, 날짜, 정적 자원, 검색·필터 및 WebMCP 입력을 점검합니다.
+`node scripts/validate.mjs`로 ID·URL 중복, 복수 출처 관계, 주장별 근거 연결, 날짜, 정적 자원, 검색·필터, WebMCP 입력과 `index.html`에 실린 JSON-LD 구조화 데이터의 항목 수를 실제 데이터와 대조해 점검합니다. Render 배포의 빌드 명령이며 실패하면 배포가 진행되지 않습니다.
 
-`node scripts/browser-check.mjs`는 실제 Chromium에서 1280px·390px 크기로 근거 목록·검색·필터·상세창·관계별 출처·CSV를 검사합니다. Windows Chrome/Edge를 자동 탐색하며 다른 환경은 `ATLAS_BROWSER`로 실행 파일 경로를 지정합니다. 별도 임시 프로필을 생성하고 검증 후 지웁니다. 실제 WebMCP 호스트 등록 및 외부 URL의 상시 가용성은 검증 범위에 포함하지 않습니다.
+`node scripts/browser-check.mjs`는 실제 Chromium에서 1280px·390px 크기로 근거 목록·검색·필터·상세창·관계별 출처·CSV를 검사합니다. Windows/macOS/Linux의 Chrome·Chromium·Edge를 자동 탐색하며 다른 환경은 `ATLAS_BROWSER`로 실행 파일 경로를 지정합니다. 별도 임시 프로필을 생성하고 검증 후 지웁니다. 실제 WebMCP 호스트 등록은 검증 범위에 포함하지 않습니다.
 
 `node scripts/evidence-report.mjs`는 데이터에서 분야별 출처와 주장별 근거의 공백을 집계해 현황 문서를 갱신합니다.
+
+`node scripts/check-links.mjs`는 등록된 모든 출처 URL에 HTTP 요청을 보내 링크가 살아있는지 확인합니다 (HEAD 우선, 405/501이면 GET으로 재시도). 끊어졌거나 응답이 없는 URL, 영구 리다이렉트된 URL을 보고하며 문제가 있으면 종료 코드 1을 반환합니다. 실제 인터넷 연결이 필요하므로 아웃바운드 접속이 제한된 CI·샌드박스 환경에서는 실행할 수 없습니다. `LINK_CHECK_CONCURRENCY`(기본 6), `LINK_CHECK_TIMEOUT_MS`(기본 10000)로 조정합니다.
+
+`node scripts/generate-seo.mjs`는 배포 환경변수 `RENDER_EXTERNAL_URL`을 이용해 `dist/sitemap.xml`과 `dist/robots.txt`를 생성합니다. 이 앱은 해시 기반 클라이언트 라우팅(`#view?field=..`)만 사용하므로 검색엔진이 개별 화면을 별도 페이지로 색인하지 않으며, sitemap은 실제로 크롤링 가능한 문서인 루트 주소 하나만 수록합니다. 환경변수가 없는 로컬 빌드에서는 아무 것도 생성하지 않고 건너뜁니다. Render 빌드 명령(`render.yaml`)에서 `validate.mjs` 다음 단계로 실행됩니다.
 
 ## 사용한 자료
 

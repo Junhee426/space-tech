@@ -632,7 +632,7 @@
  );
  for(const row of records){
   const [id,title,publisher,country,type,url,date,locator,claim,limitation,entities,kind]=row;
-  D.sources.push({id,title,publisher,country,type,url,date,reviewed,note:limitation,access:'본문 확인',dateKind:date?'문서 발표·판본':'미기재'});
+  D.sources.push({id,title,publisher,country,type,url,date,reviewed,note:limitation,access:'본문 확인'});
   D.evidence.push({id:'claim-'+id,source:id,entities,kind,claim,locator,limitation,reviewed});
   for(const entityId of entities){
    const entity=entityMap.get(entityId);

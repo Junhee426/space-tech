@@ -45,6 +45,11 @@ window.addEventListener('load',async()=>{
   document.querySelector('[data-open="adras-j"]').click();
   check(document.getElementById('detail-dialog').open,'detail dialog opens');
   document.getElementById('detail-dialog').close();
+  document.getElementById('export-button').click();
+  const entityCsv=await exported.text();
+  check(entityCsv.includes('주장별 근거')&&entityCsv.includes('확인')&&entityCsv.includes('astroscale.com'),'entity CSV includes claim sources');
+  document.querySelector('[data-view="timeline"]').click();
+  check(document.getElementById('view-content').textContent.includes('ADRAS-J 근접 접근·자동 중단 결과 발표'),'new evidence events render');
   window.SatelliteAtlas.focus('tbird-terminal');
   const edge=d.links.find(l=>l.from==='tbird-terminal'&&l.to==='tbird-mission');
   document.querySelector('[data-edge="'+edge.id+'"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));

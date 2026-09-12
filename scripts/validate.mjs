@@ -64,6 +64,8 @@ for(const f of d.fields){
 assert.throws(()=>searchTool.execute({query:'',field:'invalid'}));
 assert.throws(()=>searchTool.execute({query:42}));
 const sourceTool=registered.find(t=>t.name==='search_satellite_evidence_sources');
+const detachedSourceExecute=sourceTool.execute;
+assert(detachedSourceExecute({query:'',country:'일본'}).count>0,'host can invoke execute without binding');
 assert(sourceTool.execute({query:'',country:'대한민국'}).items.some(s=>s.id==='kari-kompsat3a'));
 assert.throws(()=>sourceTool.execute({query:'',country:'invalid'}));
 assert.throws(()=>sourceTool.execute({query:'',type:3}));

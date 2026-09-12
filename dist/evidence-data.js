@@ -6,6 +6,8 @@
  'use strict';
  const D=window.ATLAS, reviewed='2026-09-12';
  D.evidence=[];
+ // Columns: id, title, publisher, country, type, URL, document date,
+ // locator, supported claim, limitation, target entity IDs, evidence kind.
  const records=[
  [
   "telepix-flight",
@@ -680,6 +682,17 @@
  const update=entityMap.get('tetraplex');
  update.notes='NASA 조사표에 더해 개발사의 2024년 궤도 시험 발표와 D-Orbit 임무 소개서를 연결했습니다. 원시 시험자료·장기 신뢰성·세대별 동일성은 별도 확인이 필요합니다.';
  update.status='개발사 실증 발표';update.reviewed=reviewed;
+ for(const [date,entity,source] of [
+  ['2019-03-22','prisma','asi-prisma'],['2018-11-29','hysis','isro-hysis'],
+  ['2015-03-26','kompsat3a','kari-kompsat3a'],['2010-05-21','ikaros','jaxa-ikaros-deploy'],
+  ['2024-02-18','adras-j','astroscale-adras'],['2023-12','spirit','spirit-paper'],
+  ['2020-11','beihangkongshi1','esa-iodine']
+ ])D.events.push({id:'launch-evidence-'+entity,date,entity,source,kind:'발사',title:entityMap.get(entity).name+' 발사',summary:'출처가 명시한 발사 시점. 실증 목표의 달성을 뜻하지 않습니다.'});
+ for(const [date,entity,source,title] of [
+  ['2024-10-28','tetraplex','telepix-flight','TetraPLEX 개발사 궤도 시험 결과 발표'],
+  ['2024-12-11','adras-j','astroscale-adras','ADRAS-J 근접 접근·자동 중단 결과 발표'],
+  ['2024-01-12','themis','spirit-commission','TheMIS 냉각기 궤도 작동 발표'],
+  ['2010-06-11','ikaros','jaxa-ikaros-deploy','IKAROS 돛 전개·발전 확인 발표']
+ ])D.events.push({id:'release-evidence-'+source,date,entity,source,kind:'성과 발표',title,summary:D.evidence.find(e=>e.source===source).claim+' 발표 날짜와 시험 수행일은 구분합니다.'});
  D.version='1.2.0';
 })();
-

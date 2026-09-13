@@ -2,5 +2,5 @@ services:
   - type: web
     name: satellite-tech-atlas
     runtime: static
-    buildCommand: node scripts/validate.mjs
+    buildCommand: node scripts/validate.mjs && node scripts/generate-seo.mjs
     staticPublishPath: ./dist

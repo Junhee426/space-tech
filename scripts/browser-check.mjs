@@ -5,9 +5,18 @@ import {spawnSync} from 'node:child_process';
 import assert from 'node:assert/strict';
 
 const root=path.resolve(import.meta.dirname,'..');
-const browser=process.env.ATLAS_BROWSER||[
+const browser=process.env.ATLAS_BROWSER||process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||[
  'C:/Program Files/Google/Chrome/Application/chrome.exe',
- 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
+ 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+ '/opt/pw-browsers/chromium',
+ '/usr/bin/google-chrome-stable',
+ '/usr/bin/google-chrome',
+ '/usr/bin/chromium-browser',
+ '/usr/bin/chromium',
+ '/snap/bin/chromium',
+ '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+ '/Applications/Chromium.app/Contents/MacOS/Chromium',
+ '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
 ].find(p=>fs.existsSync(p));
 assert(browser,'Set ATLAS_BROWSER to a Chromium executable.');
 const temp=fs.mkdtempSync(path.join(root,'.atlas-browser-'));
@@ -15,7 +24,8 @@ const tests=String.raw`
 window.addEventListener('load',async()=>{
  const check=(condition,message)=>{if(!condition)throw new Error(message);};
  const select=(id,value)=>{const el=document.getElementById(id);el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));};
- const search=query=>{const el=document.getElementById('search');el.value=query;el.dispatchEvent(new Event('input',{bubbles:true}));};
+ const typeSearch=query=>{const el=document.getElementById('search');el.value=query;el.dispatchEvent(new Event('input',{bubbles:true}));};
+ const search=async query=>{typeSearch(query);await new Promise(resolve=>setTimeout(resolve,180));};
  const changeHash=action=>new Promise((resolve,reject)=>{
   const done=()=>{clearTimeout(timer);resolve();};
   const timer=setTimeout(()=>{window.removeEventListener('hashchange',done);reject(new Error('Navigation did not complete'));},2000);
@@ -40,27 +50,27 @@ window.addEventListener('load',async()=>{
   select('type-filter','product');
   document.querySelector('[data-view="missions"]').click();
   check(document.querySelectorAll('.mission-card').length===24,'product filter does not hide missions');
-  search('SHP163');
+  await search('SHP163');
   check(document.querySelector('[data-open="rapis1"]'),'equipment details searchable');
   document.querySelector('[data-open="rapis1"]').click();
   check(document.querySelectorAll('.test-list>div').length===7,'RAPIS seven experiment details');
   check(document.querySelector('.mission-outcome a'),'result has direct citation');
   document.getElementById('detail-dialog').close();
-  search('servis');
+  await search('servis');
   check(document.querySelectorAll('.mission-card').length===2,'both SERVIS missions are listed');
   document.querySelector('[data-open="servis2"]').click();
   check(document.getElementById('detail-dialog').open,'SERVIS detail opens');
   check(document.getElementById('dialog-content').textContent.includes('2010-06-02'),'SERVIS-2 launch date');
   check(document.getElementById('dialog-content').textContent.includes('Japan Space Systems'),'SERVIS primary source');
   document.getElementById('detail-dialog').close();
-  search('서비스 1');
+  await search('서비스 1');
   check(document.querySelectorAll('.mission-card').length===1,'Korean SERVIS alias');
-  search('');
+  await search('');
   document.querySelector('[data-view="sources"]').click();
   check(document.querySelectorAll('.source-record').length===d.sources.length,'all source records render');
   select('source-country','대한민국');
   check(document.querySelectorAll('.source-record').length===2,'country filter');
-  search('597');
+  await search('597');
   check(document.querySelectorAll('.source-record').length===1,'claim text search');
   let exported;
   URL.createObjectURL=blob=>{exported=blob;return 'blob:test-export';};
@@ -69,14 +79,24 @@ window.addEventListener('load',async()=>{
   document.getElementById('export-button').click();
   const csv=await exported.text();
   check(csv.includes('확인 주장·위치·한계')&&csv.includes('597')&&csv.includes('prnewswire.com'),'source CSV preserves evidence');
+  check(!document.getElementById('cite-bibtex-button').hidden&&!document.getElementById('cite-ris-button').hidden,'citation controls appear for sources');
+  check(getComputedStyle(document.getElementById('cite-bibtex-button')).display!=='none'&&getComputedStyle(document.getElementById('cite-ris-button')).display!=='none','citation controls are visible for sources');
+  document.getElementById('cite-bibtex-button').click();
+  const bibtex=await exported.text();
+  check((bibtex.match(/@misc\{/g)||[]).length===1&&bibtex.includes('telepix-flight-')&&bibtex.includes('prnewswire.com'),'BibTeX export respects source filters');
+  document.getElementById('cite-ris-button').click();
+  const ris=await exported.text();
+  check((ris.match(/TY  - ELEC/g)||[]).length===1&&ris.includes('prnewswire.com')&&ris.includes('ER  - '),'RIS export respects source filters');
   document.getElementById('clear-filters').click();
   select('source-type','연구 논문');
   check(document.querySelectorAll('.source-record').length===d.sources.filter(s=>s.type==='연구 논문').length,'paper filter');
-  search('검색결과없음');
+  await search('검색결과없음');
   check(document.querySelector('.empty-state'),'empty state');
   document.querySelector('[data-reset]').click();
   check(document.querySelectorAll('.source-record').length===d.sources.length,'reset evidence filters');
   window.SatelliteAtlas.focus('adras-j');
+  check(document.getElementById('cite-bibtex-button').hidden&&document.getElementById('cite-ris-button').hidden,'citation controls hide outside source view');
+  check(getComputedStyle(document.getElementById('cite-bibtex-button')).display==='none'&&getComputedStyle(document.getElementById('cite-ris-button')).display==='none','button layout respects hidden citation controls');
   check(document.querySelector('.claim-evidence').textContent.includes('15 m'),'entity claims visible');
   check(document.querySelector('.claim-evidence').textContent.includes('포획'),'limitations visible');
   document.querySelector('[data-open="adras-j"]').click();
@@ -106,7 +126,7 @@ window.addEventListener('load',async()=>{
   select('mobile-field','ai');
   check(document.activeElement.id==='mobile-field','field filter retains keyboard focus');
   const historyBeforeSearch=history.length;
-  search('59');search('597');
+  typeSearch('59');await search('597');
   check(history.length===historyBeforeSearch,'typing does not add a history entry per keystroke');
   const sharedHash=location.hash;
   const params=new URLSearchParams(sharedHash.slice(sharedHash.indexOf('?')+1));
@@ -122,7 +142,7 @@ window.addEventListener('load',async()=>{
   select('type-filter','product');
   check(new URLSearchParams(location.hash.split('?')[1]).get('type')==='product','entity type is serialized');
   const specialQuery='서비스 ? 2 & # <test>';
-  search(specialQuery);
+  await search(specialQuery);
   const specialHash=location.hash;
   await changeHash(()=>{location.hash=sharedHash;});
   check(document.querySelectorAll('.source-record').length===1,'opening a shared URL replaces previous filter state');
@@ -132,7 +152,7 @@ window.addEventListener('load',async()=>{
   const resetState=window.SatelliteAtlas.getState();
   check(resetState.field==='all'&&resetState.focus===d.fields[0].root&&resetState.type==='all'&&resetState.sourceCountry==='all'&&resetState.sourceType==='all'&&resetState.query==='','invalid or omitted URL filters use defaults');
   check(document.querySelectorAll('.mission-card').length===24,'invalid URL filters do not hide missions');
-  search('servis');
+  await search('servis');
   const beforeSkip=location.hash;
   document.querySelector('.skip-link').click();
   check(document.activeElement.id==='main'&&location.hash===beforeSkip&&window.SatelliteAtlas.getState().query==='servis','skip link focuses main without replacing the search URL');
@@ -143,6 +163,10 @@ window.addEventListener('load',async()=>{
   await changeHash(()=>history.forward());
 
   // Saving and removing records stays consistent across cards and details.
+  typeSearch('검색결과없음');
+  document.getElementById('clear-filters').click();
+  await new Promise(resolve=>setTimeout(resolve,180));
+  check(window.SatelliteAtlas.getState().query===''&&document.querySelectorAll('.mission-card').length===24,'reset cancels pending debounced search');
   document.querySelector('[data-save="servis1"]').click();
   document.querySelector('[data-save="servis2"]').click();
   document.querySelector('[data-view="saved"]').click();
@@ -175,7 +199,7 @@ try{
   const result=spawnSync(browser,['--headless','--no-first-run','--no-default-browser-check',
    '--disable-background-networking','--disable-gpu','--disable-extensions',
    '--user-data-dir='+path.join(temp,'profile-'+width+'-'+scenario),'--window-size='+width+',900',
-   '--virtual-time-budget=8000','--dump-dom',url.href],
+   '--virtual-time-budget=15000','--dump-dom',url.href],
    {encoding:'utf8',timeout:45000,windowsHide:true,maxBuffer:8*1024*1024});
   if(result.error)throw result.error;
   assert.equal(result.status,0,result.stderr.slice(-1500));

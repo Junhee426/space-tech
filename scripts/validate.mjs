@@ -5,6 +5,7 @@ const ctx={window:{}};
 vm.runInNewContext(fs.readFileSync('dist/data.js','utf8'),ctx);
 vm.runInNewContext(fs.readFileSync('dist/evidence-data.js','utf8'),ctx);
 vm.runInNewContext(fs.readFileSync('dist/mission-data.js','utf8'),ctx);
+vm.runInNewContext(fs.readFileSync('dist/mission-programs.js','utf8'),ctx);
 const d=ctx.window.ATLAS;
 const ids=new Set(d.entities.map(e=>e.id));
 const sources=new Set(d.sources.map(s=>s.id));
@@ -13,6 +14,17 @@ for(const e of d.entities.filter(e=>e.type==='mission')){
  assert(m&&m.objective&&m.result&&m.conditions&&Array.isArray(m.tests),'missing mission profile '+e.id);
  assert(e.sources.includes(m.source),'mission source not attached '+e.id);
  if(m.conditionSource)assert(e.sources.includes(m.conditionSource),'missing condition source '+e.id);
+ const program=m.program;
+ assert(program&&/^\d{4}-\d{2}-\d{2}$/.test(program.reviewed)&&program.reviewed<=d.reviewed,'missing or invalid program review '+e.id);
+ for(const key of ['purpose','organization','architecture','verification']){
+  assert(typeof program[key]?.text==='string'&&program[key].text.trim(),'missing program '+key+' '+e.id);
+ }
+ assert(Array.isArray(program.considerations)&&program.considerations.length>=3,'missing engineering considerations '+e.id);
+ for(const item of program.considerations)assert(item.topic&&item.detail,'incomplete engineering consideration '+e.id);
+ for(const entry of [program.purpose,program.organization,program.architecture,program.verification,...program.considerations]){
+  assert(Array.isArray(entry.sources)&&entry.sources.length,'uncited program content '+e.id);
+  for(const id of entry.sources)assert(sources.has(id)&&e.sources.includes(id),'missing program source '+e.id+': '+id);
+ }
 }
 assert.equal(ids.size,d.entities.length,'duplicate entity IDs');
 assert.equal(sources.size,d.sources.length,'duplicate source IDs');
@@ -46,6 +58,10 @@ for(const source of d.sources){
 vm.runInNewContext(fs.readFileSync('dist/research.js','utf8'),ctx);
 const research=ctx.window.createAtlasResearch(d);
 assert(research.search('제논 홀').some(e=>e.id==='bht200'),'multi-word search must include notes');
+assert(research.search('제어권 회수').some(e=>e.id==='opssat-mission'),'program engineering considerations are searchable');
+assert(research.search('슈퍼커패시터').some(e=>e.id==='spirit'),'program architecture is searchable');
+assert(research.search('미세유체').some(e=>e.id==='biosentinel'),'expanded science project is searchable');
+assert.equal(d.sources.find(source=>source.id==='dlr-o4c-record').originGroup,d.sources.find(source=>source.id==='dlr-o4c-paper').originGroup,'repository abstract is not an independent publisher');
 assert(research.search('ＢＨＴ－２００').some(e=>e.id==='bht200'),'unicode search');
 assert(research.search('초분광','sensing').some(e=>e.id==='intuition1'),'cross-field evidence');
 assert.equal(research.search('BHT-200','power').length,0,'field isolation');
@@ -98,6 +114,7 @@ assert.throws(()=>sourceTool.execute({query:'',type:3}));
 assert.throws(()=>sourceTool.execute({query:'',unknown:true}));
 const evidenceTool=registered.find(t=>t.name==='get_satellite_record_evidence');
 assert(evidenceTool.execute({id:'tetraplex'}).evidence.some(e=>e.source==='telepix-flight'));
+assert.equal(evidenceTool.execute({id:'rapis1'}).record.demonstration.program.considerations.length,3,'WebMCP exposes mission engineering considerations');
 pageListeners.get('pageshow')({persisted:false});
 assert.equal(registered.length,4,'ordinary pageshow must not duplicate tools');
 pageListeners.get('pagehide')({persisted:true});

@@ -3,7 +3,7 @@ import vm from 'node:vm';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..');
 const ctx={window:{}};
-for(const file of ['data.js','evidence-data.js','mission-data.js','research.js'])vm.runInNewContext(fs.readFileSync(path.join(root,'dist',file),'utf8'),ctx);
+for(const file of ['data.js','evidence-data.js','mission-data.js','mission-programs.js','research.js'])vm.runInNewContext(fs.readFileSync(path.join(root,'dist',file),'utf8'),ctx);
 const D=ctx.window.ATLAS,R=ctx.window.createAtlasResearch(D);
 const rows=D.fields.map(field=>{
  const list=D.entities.filter(e=>e.field===field.id),c=R.coverage(list);

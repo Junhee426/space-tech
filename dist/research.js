@@ -29,8 +29,16 @@ window.createAtlasResearch = D => {
   if(!identifierIndex.has(key))identifierIndex.set(key,new Set());
   identifierIndex.get(key).add(e.id);
  }
+ const demonstrationText=demonstration=>{
+  if(!demonstration)return '';
+  const {objective,result,conditions,tests,program}=demonstration;
+  return [objective,result,conditions,...(tests||[]).flat(),
+   ...(program?[program.purpose.text,program.organization.text,program.architecture.text,program.verification.text,
+    ...program.considerations.flatMap(item=>[item.topic,item.detail])]:[])
+  ].join(' ');
+ };
  const texts=new Map(D.entities.map(e=>[e.id,normalize([
-  e.name,e.subtitle,e.summary,e.status,e.notes,e.demonstration ? Object.values(e.demonstration).flat(2).join(" ") : "",...(e.aliases||[]),
+  e.name,e.subtitle,e.summary,e.status,e.notes,demonstrationText(e.demonstration),...(e.aliases||[]),
   ...(e.metrics||[]).flat(),fields.get(e.field).name,fields.get(e.field).short
  ].join(' '))]));
  const neighbors=id=>adjacency.get(id)||[];

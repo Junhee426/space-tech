@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {spawnSync} from 'node:child_process';
+import {spawn} from 'node:child_process';
 import assert from 'node:assert/strict';
 
 const root=path.resolve(import.meta.dirname,'..');
@@ -33,6 +33,7 @@ window.addEventListener('load',async()=>{
   action();
  });
  try{
+  check(innerWidth===Number(new URL(location.href).searchParams.get('viewport')),'browser uses the requested CSS viewport width');
   const d=window.ATLAS;
   check(window.SatelliteAtlas,'app initialized');
   if(location.hash.startsWith('#sources')){
@@ -45,7 +46,18 @@ window.addEventListener('load',async()=>{
   }
   check(window.SatelliteAtlas.getState().view==='missions','mission landing page');
   check(document.querySelectorAll('.mission-card').length===24,'all mission profiles render');
+  check(document.querySelectorAll('.mission-topics').length===24,'mission cards preview engineering topics');
   check(document.documentElement.scrollWidth<=innerWidth,'landing page has no horizontal overflow');
+  for(const mission of d.entities.filter(entity=>entity.type==='mission')){
+   document.querySelector('[data-open="'+mission.id+'"]').click();
+   const dialog=document.getElementById('detail-dialog');
+   check(dialog.querySelectorAll('.program-facts>div').length===4,'project facts render for '+mission.id);
+   check(dialog.querySelectorAll('.engineering-item').length===3,'engineering topics render for '+mission.id);
+   check(dialog.querySelector('.engineering-note').textContent.includes('설계 검토 관점'),'engineering analysis is labeled separately');
+   check(dialog.querySelectorAll('.mission-program a').length>=4&&dialog.querySelectorAll('.mission-engineering a').length>=3,'program facts and considerations cite originals');
+   check(dialog.scrollWidth<=dialog.clientWidth+1,'mission details have no horizontal overflow for '+mission.id);
+   dialog.close();
+  }
   document.querySelector('[data-view="catalog"]').click();
   select('type-filter','product');
   document.querySelector('[data-view="missions"]').click();
@@ -69,7 +81,7 @@ window.addEventListener('load',async()=>{
   document.querySelector('[data-view="sources"]').click();
   check(document.querySelectorAll('.source-record').length===d.sources.length,'all source records render');
   select('source-country','대한민국');
-  check(document.querySelectorAll('.source-record').length===2,'country filter');
+  check(document.querySelectorAll('.source-record').length===d.sources.filter(source=>source.country==='대한민국').length,'country filter');
   await search('597');
   check(document.querySelectorAll('.source-record').length===1,'claim text search');
   let exported;
@@ -105,6 +117,7 @@ window.addEventListener('load',async()=>{
   document.getElementById('export-button').click();
   const entityCsv=await exported.text();
   check(entityCsv.includes('주장별 근거')&&entityCsv.includes('확인')&&entityCsv.includes('astroscale.com'),'entity CSV includes claim sources');
+  check(entityCsv.includes('사업 목적')&&entityCsv.includes('기술적 고려사항 (설계 검토 관점)')&&entityCsv.includes(d.entities.find(entity=>entity.id==='adras-j').demonstration.program.considerations[0].topic),'CSV includes project facts and engineering analysis');
   document.querySelector('[data-view="timeline"]').click();
   check(document.getElementById('view-content').textContent.includes('ADRAS-J 근접 접근·자동 중단 결과 발표'),'new evidence events render');
   window.SatelliteAtlas.focus('tbird-terminal');
@@ -188,6 +201,82 @@ window.addEventListener('load',async()=>{
   document.body.dataset.testResult='passed';
  }catch(error){document.body.dataset.testResult='failed';document.body.dataset.testError=error.message;}
 });`;
+const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function runBrowserCheck(url,width,profile){
+ const child=spawn(browser,['--headless','--no-first-run','--no-default-browser-check',
+  '--disable-background-networking','--disable-gpu','--disable-extensions',
+  '--user-data-dir='+profile,'--remote-debugging-port=0','--window-size=1280,900','about:blank'],
+  {windowsHide:true,stdio:['ignore','ignore','pipe']});
+ let stderr='',spawnError,ws,send;
+ child.stderr.on('data',chunk=>{stderr=(stderr+chunk).slice(-4000);});
+ child.once('error',error=>{spawnError=error;});
+ const pending=new Map();
+ try{
+  const deadline=Date.now()+45000;
+  const running=()=>{
+   if(spawnError)throw spawnError;
+   assert.equal(child.exitCode,null,'Browser exited before completing checks: '+stderr);
+   assert(Date.now()<deadline,'Browser did not complete checks: '+stderr);
+  };
+  const portFile=path.join(profile,'DevToolsActivePort');
+  while(!fs.existsSync(portFile)){running();await pause(50);}
+  const port=fs.readFileSync(portFile,'utf8').split('\n')[0].trim();
+  assert(/^\d+$/.test(port),'Chrome did not expose a valid local debugging port');
+  const pages=await (await fetch('http://127.0.0.1:'+port+'/json/list',{signal:AbortSignal.timeout(10000)})).json();
+  const page=pages.find(target=>target.type==='page');
+  assert(page,'Chrome did not create a page target');
+  ws=new WebSocket(page.webSocketDebuggerUrl);
+  await new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>reject(new Error('Chrome DevTools connection timed out')),10000);
+   ws.addEventListener('open',()=>{clearTimeout(timer);resolve();},{once:true});
+   ws.addEventListener('error',()=>{clearTimeout(timer);reject(new Error('Chrome DevTools connection failed'));},{once:true});
+  });
+  let commandId=0;
+  ws.addEventListener('message',event=>{
+   const message=JSON.parse(event.data),command=pending.get(message.id);
+   if(!command)return;
+   pending.delete(message.id);clearTimeout(command.timer);
+   if(message.error)command.reject(new Error(JSON.stringify(message.error)));else command.resolve(message.result);
+  });
+  ws.addEventListener('close',()=>{
+   for(const command of pending.values()){clearTimeout(command.timer);command.reject(new Error('Chrome DevTools disconnected'));}
+   pending.clear();
+  });
+  send=(method,params={})=>new Promise((resolve,reject)=>{
+   const id=++commandId;
+   const timer=setTimeout(()=>{pending.delete(id);reject(new Error(method+' timed out'));},10000);
+   pending.set(id,{resolve,reject,timer});
+   ws.send(JSON.stringify({id,method,params}));
+  });
+  await send('Page.enable');
+  // Windows Chrome enforces a minimum window width; CDP sets the CSS viewport exactly.
+  await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<600});
+  await send('Page.navigate',{url:url.href});
+  while(true){
+   running();
+   const result=await send('Runtime.evaluate',{expression:'({status:document.body?.dataset.testResult,error:document.body?.dataset.testError,width:innerWidth})',returnByValue:true});
+   const state=result.result.value;
+   if(state?.status){
+    assert.equal(state.status,'passed',state.error||'Browser checks failed');
+    assert.equal(state.width,width,'CSS viewport changed during browser checks');
+    break;
+   }
+   await pause(100);
+  }
+ }finally{
+  if(send&&ws?.readyState===WebSocket.OPEN)await send('Browser.close').catch(()=>{});
+  ws?.close();
+  for(const command of pending.values())clearTimeout(command.timer);
+  pending.clear();
+  const closeDeadline=Date.now()+3000;
+  while(child.pid&&child.exitCode===null&&Date.now()<closeDeadline)await pause(50);
+  if(child.pid&&child.exitCode===null){
+   child.kill();
+   const killDeadline=Date.now()+3000;
+   while(child.exitCode===null&&Date.now()<killDeadline)await pause(50);
+  }
+ }
+}
 try{
  const html=fs.readFileSync(path.join(root,'dist/index.html'),'utf8')
   .replaceAll('src="./','src="../dist/').replaceAll('href="./','href="../dist/')
@@ -195,16 +284,10 @@ try{
  const harness=path.join(temp,'check.html');fs.writeFileSync(harness,html);
  for(const width of [1280,390])for(const scenario of ['landing','shared-search']){
   const url=new URL(pathToFileURL(harness));
+  url.searchParams.set('viewport',width);
   if(scenario==='shared-search')url.hash='sources?'+new URLSearchParams({field:'ai',country:'대한민국',sourceType:'개발사 발표',q:'597'});
-  const result=spawnSync(browser,['--headless','--no-first-run','--no-default-browser-check',
-   '--disable-background-networking','--disable-gpu','--disable-extensions',
-   '--user-data-dir='+path.join(temp,'profile-'+width+'-'+scenario),'--window-size='+width+',900',
-   '--virtual-time-budget=15000','--dump-dom',url.href],
-   {encoding:'utf8',timeout:45000,windowsHide:true,maxBuffer:8*1024*1024});
-  if(result.error)throw result.error;
-  assert.equal(result.status,0,result.stderr.slice(-1500));
-  assert(result.stdout.includes('data-test-result="passed"'),result.stdout.match(/data-test-error="[^"]*/)?.[0]||'Browser did not complete checks: '+result.stderr.slice(-1000));
-  console.log('Browser evidence, navigation and saved-item flows passed at '+width+'px ('+scenario+')');
+  await runBrowserCheck(url,width,path.join(temp,'profile-'+width+'-'+scenario));
+  console.log('Browser evidence, navigation and saved-item flows passed at '+width+' CSS px ('+scenario+')');
  }
 }finally{
  // Verify the absolute cleanup target stays inside this workspace.

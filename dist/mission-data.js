@@ -26,6 +26,10 @@
   ['rapis1','7개 부품·장비 실증 과제를 한 위성에서 시험','JAXA는 과제 제출자의 평가를 바탕으로 7개 실증 성공과 2020-06-24 운용 종료를 발표했습니다.','500 ± 20 km 태양동기궤도 계획 · 최대 200 kg급','jaxa-rapis-results'],
   ['tet1','컴퓨터·항법·태양전지·추진 등 11개 실험을 궤도에서 시험','발사와 실험 탑재를 확인했습니다. 수록 출처가 발사 당시 자료여서 11개 과제의 최종 성과는 미확인입니다.','120 kg · 520 km 저궤도 · 1년 시험 계획','dlr-tet1-launch']
  ];
+ // Load-order guard: this file writes `demonstration` onto entities from data.js,
+ // so a missing or out-of-order data.js must fail clearly instead of throwing a
+ // generic "Cannot read properties of undefined" on the first lookup below.
+ if(!window.ATLAS||!Array.isArray(window.ATLAS.entities))throw new Error('mission-data.js requires data.js to run first (window.ATLAS.entities missing).');
  for (const [id,objective,result,conditions,source] of rows) {
   const e=window.ATLAS.entities.find(e=>e.id===id);
   if (!e) { console.error(`mission-data.js: no entity found for id "${id}"`); continue; }

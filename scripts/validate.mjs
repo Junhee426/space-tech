@@ -1,6 +1,38 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
+
+// Payload budget: the whole app is client-side with no pagination, so the
+// data files below are downloaded and parsed in full on every visit. The
+// dataset has grown ~30-50% per recent update; this budget is a generous
+// multiple of the current size so ordinary growth passes silently, but an
+// unexpectedly large jump fails the build instead of shipping unnoticed.
+// If this genuinely needs raising, that should be a deliberate decision
+// (and a good moment to revisit lazy-loading a file like mission-programs.js).
+const DATA_FILES=['dist/data.js','dist/evidence-data.js','dist/mission-data.js','dist/mission-programs.js','dist/research.js'];
+const fileSizes=Object.fromEntries(DATA_FILES.map(f=>[f,fs.statSync(f).size]));
+const totalDataBytes=Object.values(fileSizes).reduce((a,b)=>a+b,0);
+const DATA_BUDGET_BYTES=360*1024;
+assert(totalDataBytes<=DATA_BUDGET_BYTES,'Client-side data payload is '+totalDataBytes+' bytes, over the '+DATA_BUDGET_BYTES+'-byte budget ('+DATA_FILES.join(', ')+'). All of this loads unconditionally in every browser with no pagination or lazy-loading; raise the budget only as a deliberate choice, and consider splitting/lazy-loading large views instead.');
+
+// Load-order guard tests: data.js -> evidence-data.js -> mission-data.js ->
+// mission-programs.js mutate one shared global in sequence. Loading a later
+// file before its prerequisite must fail with a clear, specific error instead
+// of a generic "Cannot read properties of undefined" or, worse, silently
+// leaving window.ATLAS half-built.
+for(const [file,expected] of [
+ ['dist/evidence-data.js',/evidence-data\.js requires data\.js/],
+ ['dist/mission-data.js',/mission-data\.js requires data\.js/],
+ ['dist/mission-programs.js',/mission-programs\.js requires data\.js and mission-data\.js/]
+]){
+ assert.throws(()=>vm.runInNewContext(fs.readFileSync(file,'utf8'),{window:{}}),expected,file+' must fail clearly when its prerequisite has not run');
+}
+{
+ const dataOnly={window:{}};
+ vm.runInNewContext(fs.readFileSync('dist/data.js','utf8'),dataOnly);
+ assert.throws(()=>vm.runInNewContext(fs.readFileSync('dist/mission-programs.js','utf8'),dataOnly),/mission-data\.js/,'mission-programs.js must also require mission-data.js, not just data.js');
+}
+
 const ctx={window:{}};
 vm.runInNewContext(fs.readFileSync('dist/data.js','utf8'),ctx);
 vm.runInNewContext(fs.readFileSync('dist/evidence-data.js','utf8'),ctx);
@@ -154,4 +186,4 @@ if(fs.existsSync('.openai/hosting.json')){
   const manifest=JSON.parse(fs.readFileSync('.openai/hosting.json','utf8'));
   assert.equal(manifest.static.directory,'dist');assert(manifest.project_id);
 }
-console.log(JSON.stringify({entities:d.entities.length,organizations:d.entities.filter(e=>e.type==='organization').length,products:d.entities.filter(e=>e.type==='product').length,missions:d.entities.filter(e=>e.type==='mission').length,technologies:d.entities.filter(e=>e.type==='technology').length,relations:d.links.length,sources:d.sources.length,countries:new Set(d.sources.map(s=>s.country)).size,evidence:d.evidence.length,coverage:research.coverage(),events:d.events.length,status:'passed'},null,2));
+console.log(JSON.stringify({entities:d.entities.length,organizations:d.entities.filter(e=>e.type==='organization').length,products:d.entities.filter(e=>e.type==='product').length,missions:d.entities.filter(e=>e.type==='mission').length,technologies:d.entities.filter(e=>e.type==='technology').length,relations:d.links.length,sources:d.sources.length,countries:new Set(d.sources.map(s=>s.country)).size,evidence:d.evidence.length,coverage:research.coverage(),events:d.events.length,dataPayloadBytes:{...fileSizes,total:totalDataBytes,budget:DATA_BUDGET_BYTES},status:'passed'},null,2));

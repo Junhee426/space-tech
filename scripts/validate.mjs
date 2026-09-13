@@ -72,15 +72,22 @@ assert(research.sourceIds(d.entities.find(e=>e.id==='tbird-terminal')).includes(
 for(const field of d.fields)assert(d.evidence.some(e=>e.entities.some(id=>d.entities.find(n=>n.id===id).field===field.id)),'no new evidence in '+field.id);
 // Validate the actual WebMCP schema and execution with the shared query engine.
 const registered=[];
-const webContext={window:{ATLAS:d,SatelliteAtlas:{search:research.search,searchSources:research.searchSources,getEvidence:research.evidenceFor,getEntity:id=>d.entities.find(e=>e.id===id),getConnections:research.neighbors,getSources:id=>research.sourceIds(d.entities.find(e=>e.id===id)).map(id=>d.sources.find(s=>s.id===id))},addEventListener(){}},document:{modelContext:{registerTool:t=>registered.push(t)}},AbortController};
+const registrationSignals=[];
+const pageListeners=new Map();
+const webContext={window:{ATLAS:d,SatelliteAtlas:{search:research.search,searchSources:research.searchSources,getEvidence:research.evidenceFor,getEntity:id=>d.entities.find(e=>e.id===id),getConnections:research.neighbors,getSources:id=>research.sourceIds(d.entities.find(e=>e.id===id)).map(id=>d.sources.find(s=>s.id===id))},addEventListener:(name,listener)=>pageListeners.set(name,listener)},document:{modelContext:{registerTool:(tool,{signal})=>{registered.push(tool);registrationSignals.push(signal);}}},AbortController};
 vm.runInNewContext(fs.readFileSync('dist/webmcp.js','utf8'),webContext);
+assert.equal(registered.length,4,'register each WebMCP tool on initial load');
+assert.equal(new Set(registered.map(tool=>tool.name)).size,4,'unique WebMCP tools');
+assert(registrationSignals.every(signal=>!signal.aborted),'initial registrations stay active');
 const searchTool=registered.find(t=>t.name==='search_satellite_technology_records');
 for(const f of d.fields){
  assert(searchTool.inputSchema.properties.field.enum.includes(f.id));
  assert(searchTool.execute({query:'',field:f.id}).count>0,'WebMCP field '+f.id);
 }
 assert.throws(()=>searchTool.execute({query:'',field:'invalid'}));
+assert.throws(()=>searchTool.execute({query:'',field:null}),'null field violates WebMCP schema');
 assert.throws(()=>searchTool.execute({query:42}));
+assert.equal(searchTool.execute({query:''}).count,d.entities.length,'omitted field defaults to all');
 assert.equal(searchTool.execute({query:'SERVIS',field:'ai'}).items.filter(e=>e.type==='mission').length,2);
 const sourceTool=registered.find(t=>t.name==='search_satellite_evidence_sources');
 const detachedSourceExecute=sourceTool.execute;
@@ -91,6 +98,22 @@ assert.throws(()=>sourceTool.execute({query:'',type:3}));
 assert.throws(()=>sourceTool.execute({query:'',unknown:true}));
 const evidenceTool=registered.find(t=>t.name==='get_satellite_record_evidence');
 assert(evidenceTool.execute({id:'tetraplex'}).evidence.some(e=>e.source==='telepix-flight'));
+pageListeners.get('pageshow')({persisted:false});
+assert.equal(registered.length,4,'ordinary pageshow must not duplicate tools');
+pageListeners.get('pagehide')({persisted:true});
+assert(registrationSignals.every(signal=>signal.aborted),'pagehide releases tool registrations');
+pageListeners.get('pageshow')({persisted:true});
+assert.equal(registered.length,8,'cache restoration registers all tools again');
+assert(registrationSignals.slice(4).every(signal=>!signal.aborted),'restored tools use an active signal');
+assert.notEqual(registrationSignals[0],registrationSignals[4],'restoration creates a fresh lifecycle');
+pageListeners.get('pageshow')({persisted:true});
+assert.equal(registered.length,8,'repeated pageshow must not duplicate tools');
+pageListeners.get('pagehide')({persisted:true});
+assert(registrationSignals.every(signal=>signal.aborted),'restored page also releases registrations');
+pageListeners.get('pageshow')({persisted:true});
+assert.equal(registered.length,12,'tools survive repeated cache restorations');
+pageListeners.get('pagehide')({persisted:false});
+assert(registrationSignals.every(signal=>signal.aborted),'ordinary navigation releases registrations');
 const html=fs.readFileSync('dist/index.html','utf8');
 for(const m of html.matchAll(/(?:src|href)="\.\/([^"?#]+)"/g))assert(fs.existsSync('dist/'+m[1]),'missing asset '+m[1]);
 assert(html.includes('lang="ko"'));

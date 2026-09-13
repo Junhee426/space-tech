@@ -4,6 +4,9 @@
 (() => {
  'use strict';
  const D=window.ATLAS;
+ // Load-order guard: this file adds `program` detail onto the `demonstration`
+ // objects mission-data.js creates, so both prerequisites must have already run.
+ if(!D||!Array.isArray(D.entities)||!D.entities.some(e=>e.demonstration))throw new Error('mission-programs.js requires data.js and mission-data.js to run first (window.ATLAS entities/demonstration missing).');
  const extraSources=[
   {
     "id": "nasa-click-project",

@@ -5,6 +5,10 @@
 (() => {
  'use strict';
  const D=window.ATLAS, reviewed='2026-09-12';
+ // Load-order guard: this file mutates data.js's output in place, so a missing or
+ // out-of-order data.js must fail with a clear message instead of a generic
+ // "Cannot read properties of undefined" deep inside this file.
+ if(!D||!Array.isArray(D.entities))throw new Error('evidence-data.js requires data.js to run first (window.ATLAS.entities missing).');
  D.evidence=[];
  // Columns: id, title, publisher, country, type, URL, document date,
  // locator, supported claim, limitation, target entity IDs, evidence kind.

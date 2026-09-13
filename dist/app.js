@@ -2,7 +2,13 @@
 (() => {
  'use strict';
  const D=window.ATLAS;
- if(!D){document.getElementById('view-content').textContent='자료를 불러오지 못했습니다. 페이지를 새로고침해 주세요.';return;}
+ // The dataset is assembled by 4 scripts mutating one global in sequence
+ // (data.js -> evidence-data.js -> mission-data.js -> mission-programs.js).
+ // Each has its own load-order guard, but a bug could still leave window.ATLAS
+ // partially built; check the pipeline actually completed instead of rendering
+ // a half-populated dataset with confusing failures deeper in the UI.
+ const dataIntact=D&&Array.isArray(D.entities)&&Array.isArray(D.sources)&&Array.isArray(D.links)&&Array.isArray(D.events)&&Array.isArray(D.evidence)&&D.entities.filter(e=>e.type==='mission').every(e=>e.demonstration&&e.demonstration.program);
+ if(!dataIntact){document.getElementById('view-content').textContent='자료를 불러오지 못했습니다. 페이지를 새로고침해 주세요.';return;}
  const $=id=>document.getElementById(id);
  const E=new Map(D.entities.map(e=>[e.id,e]));
  const S=new Map(D.sources.map(s=>[s.id,s]));

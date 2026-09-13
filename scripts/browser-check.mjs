@@ -5,9 +5,18 @@ import {spawnSync} from 'node:child_process';
 import assert from 'node:assert/strict';
 
 const root=path.resolve(import.meta.dirname,'..');
-const browser=process.env.ATLAS_BROWSER||[
+const browser=process.env.ATLAS_BROWSER||process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||[
  'C:/Program Files/Google/Chrome/Application/chrome.exe',
- 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
+ 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+ '/opt/pw-browsers/chromium',
+ '/usr/bin/google-chrome-stable',
+ '/usr/bin/google-chrome',
+ '/usr/bin/chromium-browser',
+ '/usr/bin/chromium',
+ '/snap/bin/chromium',
+ '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+ '/Applications/Chromium.app/Contents/MacOS/Chromium',
+ '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
 ].find(p=>fs.existsSync(p));
 assert(browser,'Set ATLAS_BROWSER to a Chromium executable.');
 const temp=fs.mkdtempSync(path.join(root,'.atlas-browser-'));

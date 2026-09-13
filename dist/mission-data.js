@@ -28,9 +28,14 @@
  ];
  for (const [id,objective,result,conditions,source] of rows) {
   const e=window.ATLAS.entities.find(e=>e.id===id);
+  if (!e) { console.error(`mission-data.js: no entity found for id "${id}"`); continue; }
   e.demonstration={objective,result,conditions,source,tests:[]};
  }
- const mission=id=>window.ATLAS.entities.find(e=>e.id===id).demonstration;
+ const mission=id=>{
+  const e=window.ATLAS.entities.find(x=>x.id===id);
+  if (!e?.demonstration) { console.error(`mission-data.js: no demonstration entry for id "${id}"`); return {tests:[]}; }
+  return e.demonstration;
+ };
  mission('rapis1').tests=[
   ['NBFPGA','궤도 재프로그래밍 성공, 관측 기간에 소프트 오류 미관측. 모든 환경에서 오류가 없다는 뜻은 아닙니다.'],
   ['GPRCS','HAN 계열 SHP163 추진제의 연속·펄스 연소 실증.'],

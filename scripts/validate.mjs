@@ -94,6 +94,20 @@ assert(evidenceTool.execute({id:'tetraplex'}).evidence.some(e=>e.source==='telep
 const html=fs.readFileSync('dist/index.html','utf8');
 for(const m of html.matchAll(/(?:src|href)="\.\/([^"?#]+)"/g))assert(fs.existsSync('dist/'+m[1]),'missing asset '+m[1]);
 assert(html.includes('lang="ko"'));
+{
+ // The structured-data block advertises entity/source counts for search engines; keep it honest
+ // by cross-checking those numbers against the live dataset instead of letting them silently drift.
+ const ldMatch=html.match(/<script type="application\/ld\+json">\s*([\s\S]*?)\s*<\/script>/);
+ assert(ldMatch,'index.html is missing its JSON-LD structured data block');
+ const ld=JSON.parse(ldMatch[1]);
+ assert.equal(ld['@type'],'Dataset');
+ assert.equal(ld.dateModified,d.reviewed,'JSON-LD dateModified is stale relative to the dataset');
+ const counted=(label,expected)=>assert(ld.variableMeasured.includes(`${expected} ${label}`),`JSON-LD variableMeasured out of date for "${label}" (expected ${expected})`);
+ counted('entities',d.entities.length);
+ counted('cited sources',d.sources.length);
+ counted('timeline events',d.events.length);
+ counted('technology fields',d.fields.length);
+}
 // The hosting manifest is present only in the original Sites checkout.
 // Render and other static hosts validate the same portable app without it.
 if(fs.existsSync('.openai/hosting.json')){

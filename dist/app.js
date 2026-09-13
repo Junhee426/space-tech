@@ -22,7 +22,7 @@
  const {neighbors,inField,normalize,matches,sourceIds}=research;
  const nodeLinks=id=>neighbors(id).map(n=>n.link);
  function filteredEntities(){return D.entities.filter(e=>inField(e,state.field)&&(state.type==='all'||e.type===state.type)&&matches(e,state.query));}
- function pageEntities(){let list=filteredEntities();if(state.view==='catalog')list=list.filter(e=>['organization','product'].includes(e.type));if(state.view==='missions')list=list.filter(e=>e.type==='mission');if(state.view==='saved')list=list.filter(e=>saved.has(e.id));return list;}
+ function pageEntities(){let list=filteredEntities();if(state.view==='catalog')list=list.filter(e=>['organization','product'].includes(e.type));if(state.view==='missions')list=list.filter(e=>e.type==='mission').sort((a,b)=>(b.launch||'').localeCompare(a.launch||''));if(state.view==='saved')list=list.filter(e=>saved.has(e.id));return list;}
  function evidenceClass(e){return /개발사/.test(e.status)?'vendor':/설계|기술조사|자료/.test(e.status)?'plan':'';}
  function pill(e){return '<span class="status-pill '+evidenceClass(e)+'">'+esc(e.status)+'</span>';}
  function toast(message){clearTimeout(toastTimer);$('toast').textContent=message;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,3300);}
@@ -123,7 +123,7 @@
   if(state.view==='sources'){renderSources();return;}
   const list=pageEntities();
   if(!list.length){container.innerHTML=empty(state.view==='saved'?'표시할 관심 항목이 없습니다.':'일치하는 항목이 없습니다.',state.view==='saved'?'관심 있는 항목의 별표를 누르거나 분야 필터를 확인해 주세요.':'검색어와 필터 조건을 확인해 주세요.');return;}
-  if(state.view==='missions'){container.innerHTML='<div class="view-toolbar"><div><h2>실증임무 탐색</h2><p>발사 최신순 · 결과는 연결된 자료 시점 기준</p></div><span class="field-tag">'+list.length+'개 임무</span></div><div class="mission-grid">'+list.sort((a,b)=>b.launch.localeCompare(a.launch)).map(missionCard).join('')+'</div>';return;}
+  if(state.view==='missions'){container.innerHTML='<div class="view-toolbar"><div><h2>실증임무 탐색</h2><p>최신 사업순 · 발사일 기준<br>결과는 연결된 자료 시점 기준</p></div><span class="field-tag">'+list.length+'개 임무</span></div><div class="mission-grid">'+list.map(missionCard).join('')+'</div>';return;}
   container.innerHTML=(state.view==='catalog'?'<div class="view-toolbar"><div><h2>기업·기관과 제품</h2><p>국가·기업의 기술력 순위를 의미하지 않습니다.</p></div><span class="field-tag">'+list.length+'개</span></div>':'')+'<div class="result-grid">'+list.map(card).join('')+'</div>';
  }
  function renderMap(){let focus=E.get(state.focus);if(!focus||!inField(focus,state.field)){focus=E.get((fieldOf(state.field)||D.fields[0]).root);state.focus=focus.id;}

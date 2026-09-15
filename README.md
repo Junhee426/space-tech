@@ -79,6 +79,8 @@
 
 `node scripts/evidence-report.mjs`는 데이터에서 분야별 출처와 주장별 근거의 공백을 집계해 현황 문서를 갱신합니다.
 
+`node scripts/generate-linkage-queue.mjs`는 기존 출처는 있지만 주장별 근거(`evidence`)로 아직 연결되지 않은 항목만 골라 [docs/EVIDENCE_LINKAGE_QUEUE.md](docs/EVIDENCE_LINKAGE_QUEUE.md) 편집 목록을 만듭니다. 이 목록은 **출처 없음**이 아니라 **연결 누락**을 뜻하며, 재생성해도 체크 상태와 메모는 항목 ID 기준으로 보존됩니다.
+
 `node scripts/check-links.mjs`는 등록된 모든 출처 URL에 HTTP 요청을 보내 링크가 살아있는지 확인합니다 (HEAD 우선, 405/501이면 GET으로 재시도). 끊어졌거나 응답이 없는 URL, 영구 리다이렉트된 URL을 보고하며 문제가 있으면 종료 코드 1을 반환합니다. 실제 인터넷 연결이 필요하므로 아웃바운드 접속이 제한된 CI·샌드박스 환경에서는 실행할 수 없습니다. `LINK_CHECK_CONCURRENCY`(기본 6), `LINK_CHECK_TIMEOUT_MS`(기본 10000)로 조정합니다.
 
 `node scripts/generate-seo.mjs`는 배포 환경변수 `RENDER_EXTERNAL_URL`을 이용해 `dist/sitemap.xml`과 `dist/robots.txt`를 생성합니다. 이 앱은 해시 기반 클라이언트 라우팅(`#view?field=..`)만 사용하므로 검색엔진이 개별 화면을 별도 페이지로 색인하지 않으며, sitemap은 실제로 크롤링 가능한 문서인 루트 주소 하나만 수록합니다. 환경변수가 없는 로컬 빌드에서는 아무 것도 생성하지 않고 건너뜁니다. Render 빌드 명령(`render.yaml`)에서 `validate.mjs` 다음 단계로 실행됩니다.

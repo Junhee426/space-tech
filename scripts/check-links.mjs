@@ -19,8 +19,24 @@
  *    refused errors are treated as broken (after the same retry budget, in
  *    case what looks like a connection failure is itself transient) — none
  *    of those are things worth waiting out indefinitely.
+ *
+ * Link reachability vs. content review — these are different events and are
+ * tracked as different fields on purpose:
+ *  - `source.reviewed` in the dataset (dist/data.js and friends) records the
+ *    date a human actually read the source and confirmed the claims it
+ *    supports. Only a person editing those files by hand changes it.
+ *  - `checkedAt` in this script's report (written below) records only that
+ *    an automated HTTP request reached the URL and what it got back. It
+ *    says nothing about whether the content still supports any claim.
+ * This script never writes to dist/data.js or any other curated data file —
+ * it only reads them and writes its own report under reports/. Nothing here
+ * ever updates `source.reviewed`, an entity's `status`, or any claim text;
+ * doing that always requires a human (or an explicit content-review step)
+ * to have actually read the source. If this script is ever changed to write
+ * back into the dataset, that guarantee is broken — don't do it here.
  */
 import fs from 'node:fs';
+import path from 'node:path';
 import vm from 'node:vm';
 
 const ctx = { window: {} };
@@ -120,6 +136,23 @@ async function run() {
   } else {
     console.log('\nNo genuinely dead links found.');
   }
+
+  // A separate, machine-generated report of *reachability*, not content review. `checkedAt`
+  // is when this script ran, not when anyone last read the source — see the header comment.
+  // Written outside dist/ and outside the curated data files, and gitignored (reports/): this
+  // is a CI/monitoring artifact, never a substitute for a human updating `source.reviewed`.
+  const reportDir = path.resolve('reports');
+  fs.mkdirSync(reportDir, { recursive: true });
+  fs.writeFileSync(path.join(reportDir, 'link-check-latest.json'), JSON.stringify({
+    note: 'Link reachability check only. checkedAt is NOT a content-review date — see source.reviewed in the dataset for that. Do not copy these timestamps or statuses into dist/data.js or any curated data file.',
+    checkedAt: new Date().toISOString(),
+    concurrency: CONCURRENCY,
+    timeoutMs: TIMEOUT_MS,
+    maxRetries: MAX_RETRIES,
+    summary: { total: results.length, ok: results.length - dead.length - blocked.length - rateLimited.length, dead: dead.length, blocked: blocked.length, rateLimited: rateLimited.length, redirected: redirected.length },
+    results,
+  }, null, 2) + '\n');
+
   return results;
 }
 

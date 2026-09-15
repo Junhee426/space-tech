@@ -81,7 +81,11 @@
 
 `node scripts/generate-linkage-queue.mjs`는 기존 출처는 있지만 주장별 근거(`evidence`)로 아직 연결되지 않은 항목만 골라 [docs/EVIDENCE_LINKAGE_QUEUE.md](docs/EVIDENCE_LINKAGE_QUEUE.md) 편집 목록을 만듭니다. 이 목록은 **출처 없음**이 아니라 **연결 누락**을 뜻하며, 재생성해도 체크 상태와 메모는 항목 ID 기준으로 보존됩니다.
 
-`node scripts/check-links.mjs`는 등록된 모든 출처 URL에 HTTP 요청을 보내 링크가 살아있는지 확인합니다 (HEAD 우선, 405/501이면 GET으로 재시도). 끊어졌거나 응답이 없는 URL, 영구 리다이렉트된 URL을 보고하며 문제가 있으면 종료 코드 1을 반환합니다. 실제 인터넷 연결이 필요하므로 아웃바운드 접속이 제한된 CI·샌드박스 환경에서는 실행할 수 없습니다. `LINK_CHECK_CONCURRENCY`(기본 6), `LINK_CHECK_TIMEOUT_MS`(기본 10000)로 조정합니다.
+`node scripts/check-links.mjs`는 등록된 모든 출처 URL에 HTTP 요청을 보내 링크가 살아있는지 확인합니다 (HEAD 우선, 405/501이면 GET으로 재시도). data-structure 검증(`validate.mjs`)과는 별도로 실행·판정하는 독립된 검사입니다. HTTP 403(차단)과 429(속도 제한)는 봇 차단·요청 제한일 뿐 원문이 사라졌다는 근거가 아니므로 끊어진 링크로 분류하지 않으며 종료 코드에도 반영하지 않습니다. 429와 5xx 응답은 지수 백오프로 재시도한 뒤에도 남아 있을 때만 끊어짐으로 판정하고, 404·기타 4xx·DNS 실패·연결 거부만 실제 끊어진 링크로 보고하며 문제가 있으면 종료 코드 1을 반환합니다. 실제 인터넷 연결이 필요하므로 아웃바운드 접속이 제한된 CI·샌드박스 환경에서는 모든 URL이 도달 불가로 보일 수 있습니다. `LINK_CHECK_CONCURRENCY`(기본 6), `LINK_CHECK_TIMEOUT_MS`(기본 10000), `LINK_CHECK_MAX_RETRIES`(기본 2), `LINK_CHECK_RETRY_DELAY_MS`(기본 1500)로 조정합니다. 실행할 때마다 `reports/link-check-latest.json`(`.gitignore`에 포함, 커밋하지 않음)에 결과와 `checkedAt` 시각을 기록합니다.
+
+### 링크 확인과 내용 검토는 다른 사건입니다
+
+`source.reviewed`(데이터의 검토일)는 사람이 원문을 실제로 읽고 주장을 확인한 날짜입니다. `check-links.mjs`가 기록하는 `checkedAt`은 자동 HTTP 요청이 그 시각에 URL에 도달했다는 사실만을 뜻하며, 내용이 여전히 주장을 뒷받침하는지는 확인하지 않습니다. 이 저장소의 어떤 스크립트도 `dist/data.js`·`dist/evidence-data.js`·`dist/mission-data.js`·`dist/mission-programs.js`(사람이 직접 편집하는 원본 데이터)에 자동으로 쓰지 않습니다 — `check-links.mjs`는 읽기 전용이며 결과를 `reports/`에만 남기고, `evidence-report.mjs`·`generate-linkage-queue.mjs`는 `docs/`의 별도 문서만 생성합니다. 항목의 주장 문구, `status`, `reviewed` 검토일은 사람이 원문을 읽고 데이터 파일을 직접 수정할 때만 바뀝니다. 새 자동화를 추가할 때도 이 경계— 도달 가능성 확인과 내용 검토는 별개의 필드로 남는다는 것 — 을 지켜야 합니다.
 
 `node scripts/generate-seo.mjs`는 배포 환경변수 `RENDER_EXTERNAL_URL`을 이용해 `dist/sitemap.xml`과 `dist/robots.txt`를 생성합니다. 이 앱은 해시 기반 클라이언트 라우팅(`#view?field=..`)만 사용하므로 검색엔진이 개별 화면을 별도 페이지로 색인하지 않으며, sitemap은 실제로 크롤링 가능한 문서인 루트 주소 하나만 수록합니다. 환경변수가 없는 로컬 빌드에서는 아무 것도 생성하지 않고 건너뜁니다. Render 빌드 명령(`render.yaml`)에서 `validate.mjs` 다음 단계로 실행됩니다.
 

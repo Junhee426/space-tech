@@ -1,8 +1,8 @@
 # 근거 취합 현황
 
-데이터 판본: 1.4.0 · 검토 기준일: 2026-09-13
+데이터 판본: 1.5.0 · 검토 기준일: 2026-09-16
 
-59개 원문 · 36개 주장별 근거 · 122개 항목 · 151개 관계.
+59개 원문 · 61개 주장별 근거 · 122개 항목 · 151개 관계.
 
 ## 분야별 범위
 
@@ -10,14 +10,14 @@
 
 | 분야 | 항목 | 연결 원문 | 주장별 근거 있는 항목 | 복수 발행 계열 항목 |
 | --- | ---: | ---: | ---: | ---: |
-| 우주반도체·탑재 AI | 43 | 18 | 19 | 16 |
-| 위성 광통신 | 18 | 9 | 13 | 13 |
-| 자율운용·분산 시스템 | 16 | 8 | 5 | 6 |
+| 우주반도체·탑재 AI | 43 | 18 | 43 | 16 |
+| 위성 광통신 | 18 | 9 | 18 | 13 |
+| 자율운용·분산 시스템 | 16 | 8 | 16 | 6 |
 | 소형 추진계 | 10 | 7 | 10 | 5 |
-| 전력·에너지 저장 | 10 | 9 | 9 | 4 |
-| 열제어·열소재 | 8 | 8 | 6 | 3 |
+| 전력·에너지 저장 | 10 | 9 | 10 | 4 |
+| 열제어·열소재 | 8 | 8 | 8 | 3 |
 | 지구관측·초분광 센서 | 13 | 7 | 13 | 1 |
-| 근접운용·도킹 | 4 | 5 | 3 | 3 |
+| 근접운용·도킹 | 4 | 5 | 4 | 3 |
 
 ## 발행기관 국가·지역
 
@@ -72,51 +72,7 @@
 
 ## 주장별 확인 위치가 아직 없는 기존 항목
 
-44개 항목에는 기존 출처 연결이 있지만 새 주장별 근거 구조로 정리된 기록이 없습니다. 이 목록은 출처 없음 또는 기술 실패를 의미하지 않습니다.
+모든 항목에 적어도 한 개의 주장별 근거를 연결했습니다. 항목의 모든 설명·성능값을 검증했다는 뜻은 아니며, 각 근거의 주장·확인 위치·한계를 함께 읽어야 합니다.
 
-- 재구성형 비행 소프트웨어 (flight-sw)
-- 고속 광모뎀 (optical-modem)
-- 자율 임무·기동계획 (planning)
-- ESA (esa)
-- Open Cosmos (open-cosmos)
-- Ubotica (ubotica)
-- CGI (cgi)
-- CEiiA (ceiia)
-- GEO-K (geok)
-- KP Labs (kplabs)
-- SIMERA (simera)
-- TU Graz (tugraz)
-- cosine (cosine)
-- UPC (upc)
-- University of Pisa (pisa)
-- NASA Ames (nasa-ames)
-- MIT (mit)
-- NASA JPL (jpl)
-- Blue Canyon Technologies (blue-canyon)
-- CesiumAstro (cesium)
-- Emergent Space Technologies (emergent)
-- L3Harris (l3harris)
-- Unibap (unibap)
-- AMD / Xilinx (amd)
-- Microchip (microchip)
-- Intel (intel)
-- Leopard DPU (leopard)
-- iX10-100A (ix10)
-- Cyclone V SoC (cyclone)
-- CLICK-A 광 단말 (click-terminal)
-- DSA (dsa)
-- ROMEO (romeo)
-- FLLS 정밀 계측센서 (flls)
-- MANET 무선 네트워크 (manet)
-- Φsat-1 / FSSCat (phisat1)
-- Φsat-2 (phisat2)
-- OPS-SAT (opssat-mission)
-- Intuition-1 (intuition1)
-- CLICK-A (clicka)
-- Proba-3 (proba3)
-- 우주용 배터리 (space-battery)
-- 은 코팅 FEP 열제어 테이프 (fep-tape)
-- BioSentinel (biosentinel)
-- CPOD (cpod)
 
 이 문서는 `node scripts/evidence-report.mjs`로 재생성합니다.

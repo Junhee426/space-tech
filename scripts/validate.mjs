@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 // unexpectedly large jump fails the build instead of shipping unnoticed.
 // If this genuinely needs raising, that should be a deliberate decision
 // (and a good moment to revisit lazy-loading a file like mission-programs.js).
-const DATA_FILES=['dist/data.js','dist/evidence-data.js','dist/mission-data.js','dist/mission-programs.js','dist/research.js'];
+const DATA_FILES=['dist/data.js','dist/evidence-data.js','dist/mission-data.js','dist/mission-programs.js','dist/claim-evidence.js','dist/research.js'];
 const fileSizes=Object.fromEntries(DATA_FILES.map(f=>[f,fs.statSync(f).size]));
 const totalDataBytes=Object.values(fileSizes).reduce((a,b)=>a+b,0);
 const DATA_BUDGET_BYTES=360*1024;
@@ -23,7 +23,8 @@ assert(totalDataBytes<=DATA_BUDGET_BYTES,'Client-side data payload is '+totalDat
 for(const [file,expected] of [
  ['dist/evidence-data.js',/evidence-data\.js requires data\.js/],
  ['dist/mission-data.js',/mission-data\.js requires data\.js/],
- ['dist/mission-programs.js',/mission-programs\.js requires data\.js and mission-data\.js/]
+ ['dist/mission-programs.js',/mission-programs\.js requires data\.js and mission-data\.js/],
+ ['dist/claim-evidence.js',/claim-evidence\.js requires evidence-data\.js and mission-programs\.js/]
 ]){
  assert.throws(()=>vm.runInNewContext(fs.readFileSync(file,'utf8'),{window:{}}),expected,file+' must fail clearly when its prerequisite has not run');
 }
@@ -38,6 +39,7 @@ vm.runInNewContext(fs.readFileSync('dist/data.js','utf8'),ctx);
 vm.runInNewContext(fs.readFileSync('dist/evidence-data.js','utf8'),ctx);
 vm.runInNewContext(fs.readFileSync('dist/mission-data.js','utf8'),ctx);
 vm.runInNewContext(fs.readFileSync('dist/mission-programs.js','utf8'),ctx);
+vm.runInNewContext(fs.readFileSync('dist/claim-evidence.js','utf8'),ctx);
 const d=ctx.window.ATLAS;
 const ids=new Set(d.entities.map(e=>e.id));
 const sources=new Set(d.sources.map(s=>s.id));
@@ -89,6 +91,17 @@ for(const source of d.sources){
 }
 vm.runInNewContext(fs.readFileSync('dist/research.js','utf8'),ctx);
 const research=ctx.window.createAtlasResearch(d);
+assert(d.claimEvidenceReady,'claim review pipeline must complete');
+for(const entity of d.entities)assert(research.evidenceFor(entity.id).length,'missing claim-level evidence '+entity.id);
+for(const item of d.evidence){
+ assert(/^\d{4}-\d{2}-\d{2}$/.test(item.reviewed),'invalid claim review date '+item.id);
+ assert.equal(new Set(item.entities).size,item.entities.length,'duplicate claim targets '+item.id);
+}
+assert(research.evidenceFor('cpod').some(item=>item.claim.includes('실증하지 못')),'CPOD result must preserve the unmet demonstration objective');
+assert(research.evidenceFor('pisa').some(item=>item.kind==='관련기관 소개'&&item.limitation.includes('역할')),'related links must not imply a supplier role');
+assert(research.evidenceFor('flls').some(item=>item.limitation.includes('발사 전')),'FLLS design precision must remain qualified');
+assert.equal(d.entities.find(e=>e.id==='ix10').reviewed,'2026-09-11','claim review must not silently refresh the entire entity');
+assert.equal(d.sources.find(s=>s.id==='avionics').reviewed,'2026-09-11','claim review must preserve the previous full-source review date');
 assert(research.search('제논 홀').some(e=>e.id==='bht200'),'multi-word search must include notes');
 assert(research.search('제어권 회수').some(e=>e.id==='opssat-mission'),'program engineering considerations are searchable');
 assert(research.search('슈퍼커패시터').some(e=>e.id==='spirit'),'program architecture is searchable');
@@ -164,6 +177,8 @@ assert.equal(registered.length,12,'tools survive repeated cache restorations');
 pageListeners.get('pagehide')({persisted:false});
 assert(registrationSignals.every(signal=>signal.aborted),'ordinary navigation releases registrations');
 const html=fs.readFileSync('dist/index.html','utf8');
+const scriptOrder=[...html.matchAll(/<script defer src="\.\/([^\"]+)"/g)].map(match=>match[1]);
+assert.deepEqual(scriptOrder,['data.js','evidence-data.js','mission-data.js','mission-programs.js','claim-evidence.js','research.js','app.js','webmcp.js'],'data scripts must load before indexes and UI');
 for(const m of html.matchAll(/(?:src|href)="\.\/([^"?#]+)"/g))assert(fs.existsSync('dist/'+m[1]),'missing asset '+m[1]);
 assert(html.includes('lang="ko"'));
 {

@@ -9,6 +9,7 @@
 - 기업·제품 검색, 실증임무 비교, 날짜별 변화 기록
 - 현재 브라우저에 저장하는 관심 목록 및 출처 포함 CSV 내보내기
 - 검색·분야·유형·근거 필터를 유지하는 URL과 브라우저 뒤로/앞으로 탐색
+- 항목 상세 URL 공유·새로고침 복원 및 상세 링크 복사
 - 출처 성격, 발표일·검토일, 목표·실증·개발사 주장 구분
 - 지원 환경에서만 등록되는 읽기·탐색용 WebMCP 도구
 
@@ -19,6 +20,14 @@
 **Render 연결은 [DEPLOY_RENDER.md](DEPLOY_RENDER.md)를 따르세요.** GitHub 저장소에 소스를 올린 뒤 Render의 Static Site 또는 Blueprint로 연결하면 됩니다. `render.yaml`에 배포 설정이 포함되어 있고, 빌드 단계에서는 Node.js로 데이터와 파일을 검증합니다. 의존성 설치, 시작 명령, 환경변수, 데이터베이스는 필요하지 않습니다.
 
 ## 데이터 파일
+
+### 1.5.0 · 상세 공유와 주장별 근거 보강 (2026-09-16)
+
+상세창을 열면 기존 화면·검색·필터를 유지한 채 URL에 `detail=항목ID`가 추가됩니다. 예를 들어 `#missions?field=ai&q=servis&detail=servis2`는 SERVIS 검색 목록 위에 SERVIS-2 상세를 엽니다. 주소를 직접 열거나 새로고침해도 상세가 복원되며, 뒤로/앞으로 이동으로 목록과 상세를 오갈 수 있습니다. 닫으면 현재 URL에서 상세 ID만 지웁니다. 알 수 없는 ID는 무시하고 해당 목록을 표시합니다. 상세 링크 복사가 허용되지 않는 브라우저에서는 선택 가능한 주소를 제공합니다.
+
+`dist/claim-evidence.js`는 기존 원문 14개의 해당 문단·표를 다시 확인해 주장별 근거 25개를 추가합니다. 미정리 44개 항목을 보강해 현재 122개 항목 모두에 적어도 한 개의 주장별 근거가 있으며, 전체 근거는 61개입니다. 이는 **각 항목의 모든 설명·성능값을 검증했다는 뜻이 아닙니다.** 기관 역할, 관련 링크, 사양, 목표, 결과를 구분하고 확인 한계를 상세창·근거 자료 화면·CSV에 함께 제공합니다. [이번 확인 범위](docs/CLAIM_REVIEW.md)를 참고하세요.
+
+기존 항목·원문·사업 설명의 검토일은 유지하고 새 근거의 `reviewed`에만 2026-09-16을 기록합니다. 데이터셋 검토일은 가장 최근 보강일입니다. `claim-evidence.js`는 `mission-programs.js` 다음, `research.js` 이전에 실행되어야 하며, 모든 데이터 검증·보고 스크립트도 같은 순서로 읽습니다.
 
 `dist/data.js`의 `sources`, `entities`, `links`, `events`가 원본 데이터입니다. 전체 데이터 구조는 브라우저의 `window.ATLAS`에서 읽을 수 있습니다.
 
@@ -44,9 +53,9 @@
 
 분야를 추가할 때는 `fields`에 중심 기술을 지정하고, 출처가 있는 구체적인 제품·기관·임무와 연결합니다. 임무를 추가하면 출처가 연결된 `demonstration`과 `program`도 작성합니다. 분야 수, 화면 목록과 WebMCP 허용 목록은 데이터에서 자동 생성됩니다. 검증기는 분야 중심·근거 연결·실증 상세·사업 설명의 문단별 출처·검색·WebMCP 입력을 검사합니다.
 
-`data.js → evidence-data.js → mission-data.js → mission-programs.js → research.js` 순서는 각 파일이 이전 파일이 만든 `window.ATLAS`를 직접 수정하는 구조이므로 반드시 이 순서를 지켜야 합니다 (`index.html`의 `<script defer>` 순서). 새 데이터 파일을 추가할 때는 (1) 파일 맨 앞에서 `window.ATLAS`와 자신이 의존하는 필드가 이미 있는지 확인해 없으면 무엇이 빠졌는지 알려주는 `Error`를 던지고, (2) `index.html`에 올바른 순서로 `<script defer>`를 추가하고, (3) `scripts/validate.mjs`에 새 파일의 순서 의존성을 검증하는 항목을 더합니다. 이렇게 하면 순서가 어긋나거나 앞 파일이 일부만 실행되고 실패했을 때 알아채기 어려운 손상된 화면 대신 명확한 오류로 즉시 드러납니다. `dist/app.js`도 렌더링 전에 `window.ATLAS`의 각 배열과 모든 임무의 `demonstration.program`이 실제로 채워졌는지 다시 확인합니다.
+`data.js → evidence-data.js → mission-data.js → mission-programs.js → claim-evidence.js → research.js` 순서는 각 파일이 이전 파일이 만든 `window.ATLAS`를 직접 수정하는 구조이므로 반드시 이 순서를 지켜야 합니다 (`index.html`의 `<script defer>` 순서). 새 데이터 파일을 추가할 때는 (1) 파일 맨 앞에서 `window.ATLAS`와 자신이 의존하는 필드가 이미 있는지 확인해 없으면 무엇이 빠졌는지 알려주는 `Error`를 던지고, (2) `index.html`에 올바른 순서로 `<script defer>`를 추가하고, (3) `scripts/validate.mjs`에 새 파일의 순서 의존성을 검증하는 항목을 더합니다. 이렇게 하면 순서가 어긋나거나 앞 파일이 일부만 실행되고 실패했을 때 알아채기 어려운 손상된 화면 대신 명확한 오류로 즉시 드러납니다. `dist/app.js`도 렌더링 전에 `window.ATLAS`의 각 배열과 모든 임무의 `demonstration.program`이 실제로 채워졌는지 다시 확인합니다.
 
-이 앱은 페이지네이션 없이 데이터 전체를 한 번에 내려받아 파싱합니다. `scripts/validate.mjs`는 `dist/data.js`~`dist/research.js` 5개 파일의 합계 용량을 측정해 여유 있는 예산(360KB)을 넘으면 빌드를 실패시켜, 매 업데이트 30~50%씩 커지는 데이터셋이 눈에 띄지 않게 계속 불어나지 않도록 합니다.
+이 앱은 페이지네이션 없이 데이터 전체를 한 번에 내려받아 파싱합니다. `scripts/validate.mjs`는 `dist/data.js`~`dist/research.js` 6개 파일의 합계 용량을 측정해 여유 있는 예산(360KB)을 넘으면 빌드를 실패시켜, 매 업데이트 30~50%씩 커지는 데이터셋이 눈에 띄지 않게 계속 불어나지 않도록 합니다.
 
 2026-09-12 확장판은 NASA 추진·전력·열제어 조사와 CPOD 임무 자료를 추가했습니다. 초분광 분야는 기존 Intuition-1 근거를 재분류했습니다. 기존 항목의 검토일을 보존하며, 데이터셋 날짜는 가장 최근 확장 검토일입니다. CPOD의 실증 목표 미달성도 기록하고, 서로 다른 NASA 페이지에서 상충하는 종료일은 확정하지 않았습니다. 이번 확장은 기술 분야 중심이며 국가별 산업 전수조사를 뜻하지 않습니다.
 
@@ -73,7 +82,7 @@
 
 `node scripts/validate.mjs`로 ID·URL 중복, 복수 출처 관계, 주장별 근거 연결, 날짜, 정적 자원, 검색·필터, WebMCP 입력과 `index.html`에 실린 JSON-LD 구조화 데이터의 항목 수를 실제 데이터와 대조해 점검합니다. WebMCP의 페이지 이탈 시 해제, 페이지 캐시 복원 시 재등록과 중복 등록 방지도 검사합니다. Render 배포의 빌드 명령이며 실패하면 배포가 진행되지 않습니다.
 
-`node scripts/browser-check.mjs`는 실제 Chromium에서 1280px·390px 크기로 기본 화면과 검색 조건이 담긴 URL을 각각 열어 근거 목록·검색·필터·상세창·관계별 출처·CSV를 검사합니다. URL 상태 복원, 뒤로/앞으로 이동, 관심 목록 저장·해제와 키보드 초점도 확인합니다. Windows/macOS/Linux의 Chrome·Chromium·Edge를 자동 탐색하며 다른 환경은 `ATLAS_BROWSER`로 실행 파일 경로를 지정합니다. 별도 임시 프로필을 생성하고 검증 후 지웁니다. 실제 WebMCP 호스트 등록 및 외부 URL의 상시 가용성은 검증 범위에 포함하지 않습니다.
+`node scripts/browser-check.mjs`는 실제 Chromium에서 1280px·390px 크기로 기본 화면과 검색 조건·상세 항목이 담긴 URL을 각각 열어 근거 목록·검색·필터·상세창·관계별 출처·CSV를 검사합니다. URL 상태 복원, 뒤로/앞으로 이동, 관심 목록 저장·해제와 키보드 초점도 확인합니다. Windows/macOS/Linux의 Chrome·Chromium·Edge를 자동 탐색하며 다른 환경은 `ATLAS_BROWSER`로 실행 파일 경로를 지정합니다. 별도 임시 프로필을 생성하고 검증 후 지웁니다. 실제 WebMCP 호스트 등록 및 외부 URL의 상시 가용성은 검증 범위에 포함하지 않습니다.
 
 브라우저 검사는 DevTools 프로토콜로 실제 CSS 뷰포트를 지정하고 `innerWidth`도 확인합니다. Windows Chrome의 최소 창 너비가 모바일 검사를 왜곡하지 않도록 보완했으며, Node.js 내장 WebSocket을 사용해 별도의 브라우저 자동화 패키지를 설치하지 않습니다.
 

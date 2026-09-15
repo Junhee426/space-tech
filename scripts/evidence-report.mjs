@@ -3,7 +3,7 @@ import vm from 'node:vm';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..');
 const ctx={window:{}};
-for(const file of ['data.js','evidence-data.js','mission-data.js','mission-programs.js','research.js'])vm.runInNewContext(fs.readFileSync(path.join(root,'dist',file),'utf8'),ctx);
+for(const file of ['data.js','evidence-data.js','mission-data.js','mission-programs.js','claim-evidence.js','research.js'])vm.runInNewContext(fs.readFileSync(path.join(root,'dist',file),'utf8'),ctx);
 const D=ctx.window.ATLAS,R=ctx.window.createAtlasResearch(D);
 const rows=D.fields.map(field=>{
  const list=D.entities.filter(e=>e.field===field.id),c=R.coverage(list);
@@ -30,7 +30,7 @@ const content=[
  '- GomSpace BP4 PDF와 SpIRIT TheMIS 기술 소개 페이지는 원문 열기 오류가 발생해 추가 근거에서 제외했습니다. 각각 P60 공식 제품 설명과 연구팀 시운전 발표·논문으로 확인 가능한 내용만 반영했습니다.',
  '- 국가별 산업 전수조사와 시장 규모·수주·현재 판매 여부 조사는 포함하지 않습니다. 기존 NASA/ESA 문서 전체를 이번에 재검토한 것은 아닙니다.',
  '', '## 주장별 확인 위치가 아직 없는 기존 항목','',
- missing.length+'개 항목에는 기존 출처 연결이 있지만 새 주장별 근거 구조로 정리된 기록이 없습니다. 이 목록은 출처 없음 또는 기술 실패를 의미하지 않습니다.',
+ missing.length?missing.length+'개 항목에는 기존 출처 연결이 있지만 새 주장별 근거 구조로 정리된 기록이 없습니다. 이 목록은 출처 없음 또는 기술 실패를 의미하지 않습니다.':'모든 항목에 적어도 한 개의 주장별 근거를 연결했습니다. 항목의 모든 설명·성능값을 검증했다는 뜻은 아니며, 각 근거의 주장·확인 위치·한계를 함께 읽어야 합니다.',
  '',...missing.map(e=>'- '+e.name+' ('+e.id+')'),
  '', '이 문서는 `node scripts/evidence-report.mjs`로 재생성합니다.',''
 ].join('\n');

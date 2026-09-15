@@ -1,4 +1,5 @@
 /* Mission-first workspace: quiet chrome, readable evidence, responsive cards. */
+.detail-share{padding:16px 0 0}.detail-share label{display:block;margin-top:12px;font-size:12px}.detail-share label[hidden]{display:none}.detail-url{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px;border:1px solid var(--line);border-radius:6px;font:inherit}.source-record .claim-limitation{margin-top:6px;color:#775c21}
 :root{--paper:#f3f5f7;--ink:#172d3b;--teal:#08695f;--sidebar:220px}
 .sidebar{background:#112b38;padding-top:28px}.nav-item.active{background:#d7f4e8;color:#133f38}.sidebar-label{color:#abc2cd}
 main{max-width:1600px;margin:auto}.page-intro{padding:12px 0 4px}.page-intro h1{font-size:clamp(27px,3vw,42px);letter-spacing:-1.6px;max-width:740px}.page-intro .overline{color:var(--teal);letter-spacing:2px}.page-intro>div>p:last-child{color:#586d7a}

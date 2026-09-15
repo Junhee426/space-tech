@@ -32,10 +32,24 @@ window.addEventListener('load',async()=>{
   window.addEventListener('hashchange',done,{once:true});
   action();
  });
+ const closeDetail=async()=>{
+  const dialog=document.getElementById('detail-dialog');
+  if(!dialog.open)return;
+  await new Promise(resolve=>{dialog.addEventListener('close',resolve,{once:true});dialog.close();});
+ };
  try{
   check(innerWidth===Number(new URL(location.href).searchParams.get('viewport')),'browser uses the requested CSS viewport width');
   const d=window.ATLAS;
   check(window.SatelliteAtlas,'app initialized');
+  if(new URLSearchParams(location.hash.split('?')[1]).has('detail')){
+   const dialog=document.getElementById('detail-dialog');
+   check(dialog.open&&dialog.dataset.entity==='tetraplex','shared detail URL opens selected record on load');
+   check(document.getElementById('detail-title').textContent===d.entities.find(e=>e.id==='tetraplex').name,'shared detail title matches record');
+   // A real reload must restore the detail and the background source filters.
+   if(!sessionStorage.getItem('atlas-detail-reloaded')){sessionStorage.setItem('atlas-detail-reloaded','1');location.reload();return;}
+   await closeDetail();
+   check(!new URLSearchParams(location.hash.split('?')[1]).has('detail'),'closing a directly loaded detail clears only its URL parameter');
+  }
   if(location.hash.startsWith('#sources')){
    const state=window.SatelliteAtlas.getState();
    check(state.field==='ai'&&state.sourceCountry==='대한민국'&&state.sourceType==='개발사 발표','shared URL restores source filters on load');
@@ -56,7 +70,7 @@ window.addEventListener('load',async()=>{
    check(dialog.querySelector('.engineering-note').textContent.includes('설계 검토 관점'),'engineering analysis is labeled separately');
    check(dialog.querySelectorAll('.mission-program a').length>=4&&dialog.querySelectorAll('.mission-engineering a').length>=3,'program facts and considerations cite originals');
    check(dialog.scrollWidth<=dialog.clientWidth+1,'mission details have no horizontal overflow for '+mission.id);
-   dialog.close();
+   await closeDetail();
   }
   document.querySelector('[data-view="catalog"]').click();
   select('type-filter','product');
@@ -67,14 +81,14 @@ window.addEventListener('load',async()=>{
   document.querySelector('[data-open="rapis1"]').click();
   check(document.querySelectorAll('.test-list>div').length===7,'RAPIS seven experiment details');
   check(document.querySelector('.mission-outcome a'),'result has direct citation');
-  document.getElementById('detail-dialog').close();
+  await closeDetail();
   await search('servis');
   check(document.querySelectorAll('.mission-card').length===2,'both SERVIS missions are listed');
   document.querySelector('[data-open="servis2"]').click();
   check(document.getElementById('detail-dialog').open,'SERVIS detail opens');
   check(document.getElementById('dialog-content').textContent.includes('2010-06-02'),'SERVIS-2 launch date');
   check(document.getElementById('dialog-content').textContent.includes('Japan Space Systems'),'SERVIS primary source');
-  document.getElementById('detail-dialog').close();
+  await closeDetail();
   await search('서비스 1');
   check(document.querySelectorAll('.mission-card').length===1,'Korean SERVIS alias');
   await search('');
@@ -113,7 +127,7 @@ window.addEventListener('load',async()=>{
   check(document.querySelector('.claim-evidence').textContent.includes('포획'),'limitations visible');
   document.querySelector('[data-open="adras-j"]').click();
   check(document.getElementById('detail-dialog').open,'detail dialog opens');
-  document.getElementById('detail-dialog').close();
+  await closeDetail();
   document.getElementById('export-button').click();
   const entityCsv=await exported.text();
   check(entityCsv.includes('주장별 근거')&&entityCsv.includes('확인')&&entityCsv.includes('astroscale.com'),'entity CSV includes claim sources');
@@ -124,7 +138,7 @@ window.addEventListener('load',async()=>{
   const edge=d.links.find(l=>l.from==='tbird-terminal'&&l.to==='tbird-mission');
   document.querySelector('[data-edge="'+edge.id+'"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
   check(document.getElementById('dialog-content').textContent.includes('MIT Lincoln Laboratory'),'relationship includes added source');
-  document.getElementById('detail-dialog').close();
+  await closeDetail();
 
   // Search, filters and browser history describe the same visible results.
   document.querySelector('[data-view="sources"]').click();
@@ -190,7 +204,7 @@ window.addEventListener('load',async()=>{
   document.querySelector('[data-open="servis2"]').click();
   const detailSave=document.querySelector('#dialog-content [data-save="servis2"]');
   check(detailSave.getAttribute('aria-label').includes('해제'),'saved detail button announces removal');
-  document.getElementById('detail-dialog').close();
+  await closeDetail();
   document.querySelector('[data-view="saved"]').click();
   const removeButton=document.querySelector('#view-content [data-save="servis1"]');
   removeButton.focus();removeButton.click();
@@ -198,6 +212,50 @@ window.addEventListener('load',async()=>{
   document.activeElement.click();
   check(document.querySelector('.empty-state')&&document.activeElement.hasAttribute('data-reset'),'removing last saved card focuses empty-state action');
   check(window.SatelliteAtlas.getSaved().length===0&&document.querySelector('.nav-count').textContent==='0','saved count stays in sync');
+  // Detail URLs preserve their background view and support browser navigation.
+  await changeHash(()=>{location.hash='#missions?field=ai&q=servis';});
+  const backgroundHash=location.hash;
+  const openButton=document.querySelector('[data-open="servis2"]');
+  openButton.focus();openButton.click();
+  const detailHash=location.hash;
+  check(new URLSearchParams(detailHash.split('?')[1]).get('detail')==='servis2','opening detail serializes entity ID');
+  check(document.querySelectorAll('.mission-card').length===2&&window.SatelliteAtlas.getState().query==='servis','detail preserves background search');
+  await changeHash(()=>history.back());
+  check(location.hash===backgroundHash&&!document.getElementById('detail-dialog').open,'Back returns to filtered list');
+  await changeHash(()=>history.forward());
+  check(location.hash===detailHash&&document.getElementById('detail-dialog').dataset.entity==='servis2','Forward restores selected detail');
+  // Clipboard success and denied-permission fallback both expose the exact URL.
+  const clipboardDescriptor=Object.getOwnPropertyDescriptor(navigator,'clipboard');
+  let copied='';
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{copied=text;}}});
+  document.querySelector('[data-copy-detail]').click();
+  await new Promise(resolve=>setTimeout(resolve,0));
+  check(copied===location.href&&copied.includes('detail=servis2'),'copy button copies complete detail URL');
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('denied');}}});
+  document.querySelector('[data-copy-detail]').click();
+  await new Promise(resolve=>setTimeout(resolve,0));
+  const urlInput=document.querySelector('.detail-url');
+  check(!urlInput.closest('label').hidden&&urlInput.value===location.href&&document.activeElement===urlInput,'clipboard fallback exposes and selects the URL');
+  if(clipboardDescriptor)Object.defineProperty(navigator,'clipboard',clipboardDescriptor);else delete navigator.clipboard;
+  await closeDetail();
+  check(location.hash===backgroundHash&&window.SatelliteAtlas.getState().detail==='','close preserves filters and clears detail state');
+  check(document.activeElement.dataset.open==='servis2','detail close restores its trigger after history navigation');
+  await changeHash(()=>{location.hash='#catalog?detail=ix10';});
+  check(document.getElementById('detail-dialog').open&&document.getElementById('detail-title').textContent==='iX10-100A','product detail can be loaded directly');
+  await changeHash(()=>{location.hash='#sources?country=대한민국&detail=esa';});
+  check(document.getElementById('detail-title').textContent==='ESA'&&window.SatelliteAtlas.getState().sourceCountry==='대한민국','organization detail replaces open product without dropping background filters');
+  await changeHash(()=>{location.hash='#missions?detail=unregistered-record';});
+  check(!document.getElementById('detail-dialog').open&&window.SatelliteAtlas.getState().detail==='','unknown detail ID safely falls back to its list');
+  await changeHash(()=>{location.hash='#missions?detail=cpod';});
+  const missionDetails=document.querySelector('.mission-more');missionDetails.open=true;
+  check(document.querySelector('.claim-evidence').textContent.includes('실증하지 못'),'CPOD detail preserves unsuccessful demonstration outcome');
+  check(document.querySelector('.claim-evidence').textContent.includes('2026-09-16'),'claim-level review date appears separately');
+  await closeDetail();
+  document.querySelector('[data-view="sources"]').click();
+  await search('BioSensor');
+  check([...document.querySelectorAll('.claim-limitation')].some(el=>el.textContent.includes('생물학 목표')),'source view displays new claim limitations');
+  document.getElementById('export-button').click();
+  check((await exported.text()).includes('효모 성장은 관측하지 못'),'source CSV includes reviewed claim outcome');
   document.body.dataset.testResult='passed';
  }catch(error){document.body.dataset.testResult='failed';document.body.dataset.testError=error.message;}
 });`;
@@ -282,10 +340,10 @@ try{
   .replaceAll('src="./','src="../dist/').replaceAll('href="./','href="../dist/')
   .replace('</body>','<script>'+tests+'</script></body>');
  const harness=path.join(temp,'check.html');fs.writeFileSync(harness,html);
- for(const width of [1280,390])for(const scenario of ['landing','shared-search']){
+ for(const width of [1280,390])for(const scenario of ['landing','shared-search','shared-detail']){
   const url=new URL(pathToFileURL(harness));
   url.searchParams.set('viewport',width);
-  if(scenario==='shared-search')url.hash='sources?'+new URLSearchParams({field:'ai',country:'대한민국',sourceType:'개발사 발표',q:'597'});
+  if(scenario!=='landing')url.hash='sources?'+new URLSearchParams({field:'ai',country:'대한민국',sourceType:'개발사 발표',q:'597',...(scenario==='shared-detail'?{detail:'tetraplex'}:{})});
   await runBrowserCheck(url,width,path.join(temp,'profile-'+width+'-'+scenario));
   console.log('Browser evidence, navigation and saved-item flows passed at '+width+' CSS px ('+scenario+')');
  }

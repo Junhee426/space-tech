@@ -33,7 +33,7 @@ window.createAtlasResearch = D => {
   if(!demonstration)return '';
   const {objective,result,conditions,tests,program}=demonstration;
   return [objective,result,conditions,...(tests||[]).flat(),
-   ...(program?[program.purpose.text,program.organization.text,program.architecture.text,program.verification.text,
+   ...(program?[...(program.developers||[]).flatMap(d=>[d.name,d.role]),program.purpose.text,program.organization.text,program.architecture.text,program.verification.text,
     ...program.considerations.flatMap(item=>[item.topic,item.detail])]:[])
   ].join(' ');
  };

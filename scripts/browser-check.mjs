@@ -40,6 +40,7 @@ window.addEventListener('load',async()=>{
  try{
   check(innerWidth===Number(new URL(location.href).searchParams.get('viewport')),'browser uses the requested CSS viewport width');
   const d=window.ATLAS;
+  const missionCount=d.entities.filter(entity=>entity.type==='mission').length;
   check(window.SatelliteAtlas,'app initialized');
   if(new URLSearchParams(location.hash.split('?')[1]).has('detail')){
    const dialog=document.getElementById('detail-dialog');
@@ -59,8 +60,8 @@ window.addEventListener('load',async()=>{
    document.querySelector('[data-view="missions"]').click();
   }
   check(window.SatelliteAtlas.getState().view==='missions','mission landing page');
-  check(document.querySelectorAll('.mission-card').length===24,'all mission profiles render');
-  check(document.querySelectorAll('.mission-topics').length===24,'mission cards preview engineering topics');
+  check(document.querySelectorAll('.mission-card').length===missionCount,'all mission profiles render');
+  check(document.querySelectorAll('.mission-topics').length===missionCount,'mission cards preview engineering topics');
   check(document.documentElement.scrollWidth<=innerWidth,'landing page has no horizontal overflow');
   for(const mission of d.entities.filter(entity=>entity.type==='mission')){
    document.querySelector('[data-open="'+mission.id+'"]').click();
@@ -75,7 +76,7 @@ window.addEventListener('load',async()=>{
   document.querySelector('[data-view="catalog"]').click();
   select('type-filter','product');
   document.querySelector('[data-view="missions"]').click();
-  check(document.querySelectorAll('.mission-card').length===24,'product filter does not hide missions');
+  check(document.querySelectorAll('.mission-card').length===missionCount,'product filter does not hide missions');
   await search('SHP163');
   check(document.querySelector('[data-open="rapis1"]'),'equipment details searchable');
   document.querySelector('[data-open="rapis1"]').click();
@@ -178,13 +179,13 @@ window.addEventListener('load',async()=>{
   await changeHash(()=>{location.hash='#missions?field=invalid&focus=invalid&type=invalid&country=invalid&sourceType=invalid';});
   const resetState=window.SatelliteAtlas.getState();
   check(resetState.field==='all'&&resetState.focus===d.fields[0].root&&resetState.type==='all'&&resetState.sourceCountry==='all'&&resetState.sourceType==='all'&&resetState.query==='','invalid or omitted URL filters use defaults');
-  check(document.querySelectorAll('.mission-card').length===24,'invalid URL filters do not hide missions');
+  check(document.querySelectorAll('.mission-card').length===missionCount,'invalid URL filters do not hide missions');
   await search('servis');
   const beforeSkip=location.hash;
   document.querySelector('.skip-link').click();
   check(document.activeElement.id==='main'&&location.hash===beforeSkip&&window.SatelliteAtlas.getState().query==='servis','skip link focuses main without replacing the search URL');
   await changeHash(()=>document.querySelector('.brand').click());
-  check(window.SatelliteAtlas.getState().query===''&&document.querySelectorAll('.mission-card').length===24,'bare mission link clears previous search');
+  check(window.SatelliteAtlas.getState().query===''&&document.querySelectorAll('.mission-card').length===missionCount,'bare mission link clears previous search');
   await changeHash(()=>history.back());
   check(window.SatelliteAtlas.getState().query==='servis'&&document.querySelectorAll('.mission-card').length===2,'Back after skip and brand links restores search');
   await changeHash(()=>history.forward());
@@ -193,7 +194,7 @@ window.addEventListener('load',async()=>{
   typeSearch('검색결과없음');
   document.getElementById('clear-filters').click();
   await new Promise(resolve=>setTimeout(resolve,180));
-  check(window.SatelliteAtlas.getState().query===''&&document.querySelectorAll('.mission-card').length===24,'reset cancels pending debounced search');
+  check(window.SatelliteAtlas.getState().query===''&&document.querySelectorAll('.mission-card').length===missionCount,'reset cancels pending debounced search');
   document.querySelector('[data-save="servis1"]').click();
   document.querySelector('[data-save="servis2"]').click();
   document.querySelector('[data-view="saved"]').click();

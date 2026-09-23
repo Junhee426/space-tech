@@ -10,6 +10,7 @@ vm.runInNewContext(fs.readFileSync('dist/evidence-data.js', 'utf8'), ctx);
 vm.runInNewContext(fs.readFileSync('dist/mission-data.js', 'utf8'), ctx);
 vm.runInNewContext(fs.readFileSync('dist/mission-programs.js', 'utf8'), ctx);
 vm.runInNewContext(fs.readFileSync('dist/claim-evidence.js', 'utf8'), ctx);
+vm.runInNewContext(fs.readFileSync('dist/mission-expansion.js', 'utf8'), ctx);
 const sources = ctx.window.ATLAS.sources;
 
 const CONCURRENCY = Number(process.env.LINK_CHECK_CONCURRENCY) || 6;

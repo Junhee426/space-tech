@@ -1336,6 +1336,42 @@
     ]
   }
 };
+ // Satellite developers shown on mission cards. Each name must appear verbatim in the
+ // program's organization text, so it inherits that paragraph's citations.
+ const developers={
+  'phisat1':[['UPC','FSSCat 제안 연구팀'],['ESA','Φsat-1 AI 실험 추가']],
+  'phisat2':[['Open Cosmos','주계약자'],['ESA','개발 추진']],
+  'opssat-mission':[['TU Graz','개발 주계약자'],['ESA','GSTP 지원·운용']],
+  'intuition1':[['KP Labs','위성·탑재체 개발']],
+  'tbird-mission':[['MIT Lincoln Laboratory','탑재체 개발'],['NASA','협력 임무']],
+  'pixl1':[['DLR 통신항법연구소','광단말 개발'],['TESAT','개발 협력·제품화']],
+  'socrates':[['NICT','SOTA 개발']],
+  'clicka':[['MIT','광송수신 탑재체 개발'],['University of Florida','광송수신 탑재체 개발'],['Blue Canyon Technologies','XB1 본체'],['NASA Ames','위성 조달']],
+  'starling-mission':[['NASA Ames','사업·탑재 전자장비·통합시험'],['Blue Canyon Technologies','본체 개발']],
+  'proba3':[['ESA','임무 주관']],
+  'tacsat2':[['AFRL','사업 관리'],['Busek','홀 추력기 제공']],
+  'biosentinel':[['NASA Ames','개발'],['Johnson 우주센터','LET 분광계 참여']],
+  'cpod':[['Terran Orbital','임무 주도·운용'],['VACCO Industries','추진 시스템 제작']],
+  'prisma':[['OHB Italia','지상·비행·발사 부문 총괄'],['ASI','임무 소유'],['Leonardo','초분광 광학 장비 제작']],
+  'hysis':[['ISRO','IMS-2 버스 기반 임무']],
+  'kompsat3a':[['한국항공우주연구원','국내 주도 개발']],
+  'ikaros':[['JAXA','실증기 주관']],
+  'adras-j':[['Astroscale','설계·제작·시험·운용'],['JAXA','기술 지원']],
+  'spirit':[['멜버른대학교','임무 주도·TheMIS·PMS 개발'],['ASI','HERMES 관측장비 제공']],
+  'beihangkongshi1':[['ThrustMe','추진 기술 개발']],
+  'servis1':[['Mitsubishi Electric','위성 개발 주계약자'],['USEF','발주']],
+  'servis2':[['Mitsubishi Electric','위성 개발'],['USEF','발주']],
+  'rapis1':[['Axelspace','위성 개발'],['JAXA','사업 주관']],
+  'tet1':[['Kayser-Threde','위성 개발 주계약자'],['Astro- und Feinwerktechnik Adlershof','버스 제작'],['DLR','실험 선정']]
+ };
+ for(const [id,list] of Object.entries(developers)){
+  const program=programs[id];
+  if(!program)throw new Error('Developer listed for unknown mission program: '+id);
+  program.developers=list.map(([name,role])=>{
+   if(!program.organization.text.includes(name))throw new Error('Developer not named in organization text: '+id+' / '+name);
+   return {name,role};
+  });
+ }
  for(const source of extraSources){
   if(D.sources.some(existing=>existing.id===source.id))throw new Error('Duplicate program source: '+source.id);
   D.sources.push(source);

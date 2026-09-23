@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 // unexpectedly large jump fails the build instead of shipping unnoticed.
 // If this genuinely needs raising, that should be a deliberate decision
 // (and a good moment to revisit lazy-loading a file like mission-programs.js).
-const DATA_FILES=['dist/data.js','dist/evidence-data.js','dist/mission-data.js','dist/mission-programs.js','dist/claim-evidence.js','dist/research.js'];
+const DATA_FILES=['dist/data.js','dist/evidence-data.js','dist/mission-data.js','dist/mission-programs.js','dist/claim-evidence.js','dist/mission-expansion.js','dist/research.js'];
 const fileSizes=Object.fromEntries(DATA_FILES.map(f=>[f,fs.statSync(f).size]));
 const totalDataBytes=Object.values(fileSizes).reduce((a,b)=>a+b,0);
 const DATA_BUDGET_BYTES=360*1024;
@@ -24,7 +24,8 @@ for(const [file,expected] of [
  ['dist/evidence-data.js',/evidence-data\.js requires data\.js/],
  ['dist/mission-data.js',/mission-data\.js requires data\.js/],
  ['dist/mission-programs.js',/mission-programs\.js requires data\.js and mission-data\.js/],
- ['dist/claim-evidence.js',/claim-evidence\.js requires evidence-data\.js and mission-programs\.js/]
+ ['dist/claim-evidence.js',/claim-evidence\.js requires evidence-data\.js and mission-programs\.js/],
+ ['dist/mission-expansion.js',/mission-expansion\.js requires claim-evidence\.js/]
 ]){
  assert.throws(()=>vm.runInNewContext(fs.readFileSync(file,'utf8'),{window:{}}),expected,file+' must fail clearly when its prerequisite has not run');
 }
@@ -40,6 +41,7 @@ vm.runInNewContext(fs.readFileSync('dist/evidence-data.js','utf8'),ctx);
 vm.runInNewContext(fs.readFileSync('dist/mission-data.js','utf8'),ctx);
 vm.runInNewContext(fs.readFileSync('dist/mission-programs.js','utf8'),ctx);
 vm.runInNewContext(fs.readFileSync('dist/claim-evidence.js','utf8'),ctx);
+vm.runInNewContext(fs.readFileSync('dist/mission-expansion.js','utf8'),ctx);
 const d=ctx.window.ATLAS;
 const ids=new Set(d.entities.map(e=>e.id));
 const sources=new Set(d.sources.map(s=>s.id));
@@ -53,6 +55,8 @@ for(const e of d.entities.filter(e=>e.type==='mission')){
  for(const key of ['purpose','organization','architecture','verification']){
   assert(typeof program[key]?.text==='string'&&program[key].text.trim(),'missing program '+key+' '+e.id);
  }
+ assert(Array.isArray(program.developers)&&program.developers.length,'missing mission developers '+e.id);
+ for(const dev of program.developers)assert(dev.name&&dev.role&&program.organization.text.includes(dev.name),'developer not grounded in organization text '+e.id+': '+dev.name);
  assert(Array.isArray(program.considerations)&&program.considerations.length>=3,'missing engineering considerations '+e.id);
  for(const item of program.considerations)assert(item.topic&&item.detail,'incomplete engineering consideration '+e.id);
  for(const entry of [program.purpose,program.organization,program.architecture,program.verification,...program.considerations]){
@@ -104,6 +108,15 @@ assert.equal(d.entities.find(e=>e.id==='ix10').reviewed,'2026-09-11','claim revi
 assert.equal(d.sources.find(s=>s.id==='avionics').reviewed,'2026-09-11','claim review must preserve the previous full-source review date');
 assert(research.search('제논 홀').some(e=>e.id==='bht200'),'multi-word search must include notes');
 assert(research.search('제어권 회수').some(e=>e.id==='opssat-mission'),'program engineering considerations are searchable');
+assert(research.search('Axelspace').some(e=>e.id==='rapis1'),'mission developers are searchable');
+for(const [query,id] of [['성능검증위성','pvsat'],['차세대소형위성 1호','nextsat1'],['NEXTSat-2','nextsat2'],['도요샛','snipe'],['ELSA-d','elsa-d'],['AeroCube','ocsd'],['RAISE-2','raise2']]){
+ assert(research.search(query).some(e=>e.id===id),'verification satellite search '+query);
+ assert(d.events.some(e=>e.entity===id&&e.kind==='발사'),'verification satellite launch timeline '+id);
+ assert(d.entities.find(e=>e.id===id).reviewed==='2026-09-23','expansion records carry their own review date '+id);
+}
+assert(research.evidenceFor('elsa-d').some(e=>e.limitation.includes('모의 잔해')),'ELSA-d must keep the replica-debris limitation');
+assert(research.evidenceFor('snipe').some(e=>e.claim.includes('다솔')),'SNIPE must record the undeployed satellite');
+assert(d.entities.find(e=>e.id==='ocsd').notes.includes('위성 간 광링크 실증이 아니'),'OCSD downlink must not be read as a crosslink');
 assert(research.search('슈퍼커패시터').some(e=>e.id==='spirit'),'program architecture is searchable');
 assert(research.search('미세유체').some(e=>e.id==='biosentinel'),'expanded science project is searchable');
 assert.equal(d.sources.find(source=>source.id==='dlr-o4c-record').originGroup,d.sources.find(source=>source.id==='dlr-o4c-paper').originGroup,'repository abstract is not an independent publisher');
@@ -178,7 +191,7 @@ pageListeners.get('pagehide')({persisted:false});
 assert(registrationSignals.every(signal=>signal.aborted),'ordinary navigation releases registrations');
 const html=fs.readFileSync('dist/index.html','utf8');
 const scriptOrder=[...html.matchAll(/<script defer src="\.\/([^\"]+)"/g)].map(match=>match[1]);
-assert.deepEqual(scriptOrder,['data.js','evidence-data.js','mission-data.js','mission-programs.js','claim-evidence.js','research.js','app.js','webmcp.js'],'data scripts must load before indexes and UI');
+assert.deepEqual(scriptOrder,['data.js','evidence-data.js','mission-data.js','mission-programs.js','claim-evidence.js','mission-expansion.js','research.js','app.js','webmcp.js'],'data scripts must load before indexes and UI');
 for(const m of html.matchAll(/(?:src|href)="\.\/([^"?#]+)"/g))assert(fs.existsSync('dist/'+m[1]),'missing asset '+m[1]);
 assert(html.includes('lang="ko"'));
 {

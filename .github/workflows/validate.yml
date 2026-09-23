@@ -1,0 +1,128 @@
+# Wires this repo's existing checks (scripts/validate.mjs, scripts/browser-check.mjs,
+# scripts/check-links.mjs) into CI. Node.js and the browser used for browser-check.mjs
+# are both pinned to exact versions below so a CI run behaves the same on any date it
+# runs, instead of silently picking up whatever the runner image ships that week.
+#
+# Data-structure validation (validate) and external-link availability (check-links) are
+# deliberately separate jobs that never gate on each other: a rate-limited or bot-blocked
+# third-party site should never block or get conflated with a report on the dataset's own
+# structural integrity, and vice versa. See README.md's "검증" section for what each
+# script actually checks.
+name: Validate
+
+on:
+  push:
+  pull_request:
+  # Link rot can appear between commits, so check it on a schedule too, independent of
+  # any code change. Data-structure/browser checks stay push/PR-triggered only (below).
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Exact Node.js release (not a "22" floating range) so `node scripts/*.mjs` runs on the
+  # same engine every time. Bump deliberately, the same way DATA_BUDGET_BYTES in
+  # validate.mjs is only raised on purpose.
+  NODE_VERSION: '22.22.2'
+
+jobs:
+  # Data-structure validation: IDs, URLs, claim-level evidence linkage, dates, the client
+  # payload budget, search/filters and WebMCP input shape. No network access required.
+  validate:
+    name: Data structure (validate.mjs)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: node scripts/validate.mjs
+      - name: Editor worklists are current with the dataset
+        # These docs are generated from dist/*.js. generate-linkage-queue.mjs preserves
+        # any checkbox/notes an editor already entered (keyed by entity id), so this only
+        # fails when the underlying dataset changed without regenerating the docs — not
+        # when an editor has simply been checking items off.
+        run: |
+          node scripts/evidence-report.mjs
+          node scripts/generate-linkage-queue.mjs
+          git diff --exit-code -- docs/EVIDENCE_COVERAGE.md docs/EVIDENCE_LINKAGE_QUEUE.md || {
+            echo "::error::docs/EVIDENCE_COVERAGE.md or docs/EVIDENCE_LINKAGE_QUEUE.md is stale. Run the two commands above and commit the result." >&2
+            exit 1
+          }
+
+  # Real-browser functional checks: evidence list, search, filters, detail view,
+  # per-relationship sources, CSV export, URL state, back/forward, saved items.
+  browser-check:
+    name: Browser checks (browser-check.mjs)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    env:
+      # Playwright pins an exact Chromium build per release, so pinning the Playwright
+      # version used only to *install* the browser also pins the browser build itself.
+      # browser-check.mjs never depends on the playwright package at runtime (it drives
+      # Chromium directly over the DevTools protocol via Node's built-in WebSocket) — this
+      # is only used here, in CI, to fetch a specific, reproducible Chromium binary.
+      PLAYWRIGHT_VERSION: '1.49.1' # -> Chromium 131.0.6778.33 (Playwright build v1148)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Cache Playwright's Chromium download
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ env.PLAYWRIGHT_VERSION }}-${{ runner.os }}
+      - name: Install pinned Chromium
+        run: npx --yes "playwright@${PLAYWRIGHT_VERSION}" install --with-deps chromium
+      - name: Point browser-check.mjs at the pinned Chromium build
+        run: |
+          CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*chrome-linux*' | head -n1)"
+          if [ -z "$CHROME_PATH" ]; then
+            echo "::error::Could not find the Chromium executable Playwright installed" >&2
+            exit 1
+          fi
+          "$CHROME_PATH" --version
+          echo "ATLAS_BROWSER=$CHROME_PATH" >> "$GITHUB_ENV"
+      - run: node scripts/browser-check.mjs
+
+  # External link availability. Independent of the two jobs above on purpose (see the
+  # header comment): this never gates or is gated by data-structure validation, and its
+  # pass/fail only reflects genuinely dead links — check-links.mjs itself excludes
+  # bot-blocking (403) and rate-limiting (429) from that verdict, and retries transient
+  # 5xx responses before counting them as broken.
+  check-links:
+    name: External link availability (check-links.mjs)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: node scripts/check-links.mjs
+      - name: Guard against tooling writing back into the curated dataset
+        # check-links.mjs must stay read-only against the human-edited data files: it may
+        # only report reachability (to reports/, gitignored), never touch claim text,
+        # entity status, or source.reviewed. See the "link reachability vs. content
+        # review" note in README.md. This fails loudly if that ever regresses.
+        if: always()
+        run: |
+          git diff --exit-code -- dist/data.js dist/evidence-data.js dist/mission-data.js dist/mission-programs.js || {
+            echo "::error::check-links.mjs (or something run before this step) modified curated data files. Link checks must stay read-only — see README.md." >&2
+            exit 1
+          }
+      - name: Upload link-check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: link-check-report
+          path: reports/link-check-latest.json
+          if-no-files-found: ignore

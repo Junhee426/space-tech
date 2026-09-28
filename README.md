@@ -90,9 +90,11 @@
 
 `node scripts/validate.mjs`로 ID·URL 중복, 복수 출처 관계, 주장별 근거 연결, 날짜, 정적 자원, 검색·필터, WebMCP 입력과 `index.html`에 실린 JSON-LD 구조화 데이터의 항목 수를 실제 데이터와 대조해 점검합니다. WebMCP의 페이지 이탈 시 해제, 페이지 캐시 복원 시 재등록과 중복 등록 방지도 검사합니다. Render 배포의 빌드 명령이며 실패하면 배포가 진행되지 않습니다.
 
-`node scripts/browser-check.mjs`는 실제 Chromium에서 1280px·390px 크기로 기본 화면과 검색 조건·상세 항목이 담긴 URL을 각각 열어 근거 목록·검색·필터·상세창·관계별 출처·CSV를 검사합니다. URL 상태 복원, 뒤로/앞으로 이동, 관심 목록 저장·해제와 키보드 초점도 확인합니다. Windows/macOS/Linux의 Chrome·Chromium·Edge를 자동 탐색하며 다른 환경은 `ATLAS_BROWSER`로 실행 파일 경로를 지정합니다. 별도 임시 프로필을 생성하고 검증 후 지웁니다. 실제 WebMCP 호스트 등록 및 외부 URL의 상시 가용성은 검증 범위에 포함하지 않습니다.
+`node scripts/browser-check.mjs`는 실제 Chromium에서 1280px·390px 크기로 기본 화면과 검색 조건·상세 항목이 담긴 URL을 각각 열어 근거 목록·검색·필터·상세창·관계별 출처·CSV를 검사합니다. URL 상태 복원, 뒤로/앞으로 이동, 관심 목록 저장·해제와 키보드 초점도 확인합니다. Windows/macOS/Linux의 Chrome·Chromium·Edge를 자동 탐색하며 다른 환경은 `ATLAS_BROWSER`로 실행 파일 경로를 지정합니다. root 계정(컨테이너)이나 `CI=true` 환경에서는 Chrome 샌드박스를 끄고(`--no-sandbox`) 이 저장소의 로컬 파일만 엽니다. 별도 임시 프로필을 생성하고 검증 후 지웁니다. 실제 WebMCP 호스트 등록 및 외부 URL의 상시 가용성은 검증 범위에 포함하지 않습니다.
 
 브라우저 검사는 DevTools 프로토콜로 실제 CSS 뷰포트를 지정하고 `innerWidth`도 확인합니다. Windows Chrome의 최소 창 너비가 모바일 검사를 왜곡하지 않도록 보완했으며, Node.js 내장 WebSocket을 사용해 별도의 브라우저 자동화 패키지를 설치하지 않습니다.
+
+GitHub Actions(`.github/workflows/ci.yml`)가 PR과 main 푸시마다 `validate.mjs`와 `browser-check.mjs`를 실행합니다. 외부 URL 확인(`check-links.mjs`)은 네트워크 상태에 따라 결과가 달라지므로 CI에 포함하지 않습니다.
 
 `node scripts/evidence-report.mjs`는 데이터에서 분야별 출처와 주장별 근거의 공백을 집계해 현황 문서를 갱신합니다.
 

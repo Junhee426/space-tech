@@ -4,3 +4,11 @@ services:
     runtime: static
     buildCommand: node scripts/validate.mjs && node scripts/generate-seo.mjs
     staticPublishPath: ./dist
+    headers:
+      # Data files are loaded without version query strings; revalidate so a deploy never mixes old and new data.
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff

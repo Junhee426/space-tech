@@ -42,7 +42,7 @@ GitHub 저장소는 비공개로 만들어도 됩니다. Render 연결 시 해�
 3. Blueprint Path는 `render.yaml`을 사용합니다.
 4. 생성될 정적 사이트와 설정을 확인한 뒤 **Deploy Blueprint**를 누릅니다.
 
-`render.yaml`에는 정적 사이트 하나만 정의되어 있습니다. 별도 서버나 데이터베이스를 생성하지 않습니다. 파일의 `type: web`과 `runtime: static`은 Render에서 정적 사이트를 선언하는 조합입니다.
+`render.yaml`에는 정적 사이트 하나만 정의되어 있습니다. 별도 서버나 데이터베이스를 생성하지 않습니다. 파일의 `type: web`과 `runtime: static`은 Render에서 정적 사이트를 선언하는 조합입니다. 데이터 파일은 버전 쿼리 없이 불러오므로 `render.yaml`은 모든 파일에 `Cache-Control: public, max-age=0, must-revalidate`를 지정해 배포 직후 이전·새 데이터가 섞여 로드되지 않도록 합니다. 직접 Static Site를 만든 경우 Render의 **Headers** 설정에 같은 값을 추가하세요.
 
 공식 절차: [Render Blueprints](https://render.com/docs/infrastructure-as-code), [Blueprint 설정 명세](https://render.com/docs/blueprint-spec).
 

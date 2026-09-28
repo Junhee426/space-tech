@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Data and static asset validation
+        run: node scripts/validate.mjs
+      - name: Browser flows (Chrome preinstalled on the runner)
+        run: node scripts/browser-check.mjs

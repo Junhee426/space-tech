@@ -68,6 +68,8 @@ assert.equal(ids.size,d.entities.length,'duplicate entity IDs');
 assert.equal(sources.size,d.sources.length,'duplicate source IDs');
 assert.equal(new Set(d.fields.map(f=>f.id)).size,d.fields.length,'duplicate field IDs');
 for(const group of [d.links,d.events])assert.equal(new Set(group.map(e=>e.id)).size,group.length,'duplicate record IDs');
+// app.js interpolates IDs into HTML attributes and CSS attribute selectors without escaping.
+for(const group of [d.fields,d.entities,d.sources,d.links,d.events])for(const record of group)assert(/^[a-z0-9][a-z0-9-]*$/.test(record.id),'ID must use lowercase letters, digits and hyphens: '+record.id);
 for(const e of d.entities){assert(e.sources.length,e.id+' lacks sources');for(const id of e.sources)assert(sources.has(id),id);assert(d.fields.some(f=>f.id===e.field));assert(e.name&&e.summary);}
 for(const l of d.links){assert(ids.has(l.from)&&ids.has(l.to),'broken edge '+l.id);assert(sources.has(l.source),'missing source '+l.id);assert(l.scope&&l.label);for(const id of l.sources||[l.source])assert(sources.has(id),'missing corroborating source '+id);if(l.sources)assert(l.sources.includes(l.source));}
 for(const s of d.sources){assert(new URL(s.url).protocol==='https:');assert(s.reviewed);}

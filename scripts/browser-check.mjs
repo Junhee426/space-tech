@@ -264,6 +264,9 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function runBrowserCheck(url,width,profile){
  const child=spawn(browser,['--headless','--no-first-run','--no-default-browser-check',
   '--disable-background-networking','--disable-gpu','--disable-extensions',
+  // Chrome refuses to start as root (containers) and some CI kernels block its user-namespace sandbox;
+  // the harness only opens this repository's own local files, so run unsandboxed there.
+  ...(process.getuid?.()===0||process.env.CI==='true'?['--no-sandbox']:[]),
   '--user-data-dir='+profile,'--remote-debugging-port=0','--window-size=1280,900','about:blank'],
   {windowsHide:true,stdio:['ignore','ignore','pipe']});
  let stderr='',spawnError,ws,send;
